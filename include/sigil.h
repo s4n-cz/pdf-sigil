@@ -5,13 +5,16 @@
 #include "error.h"
 
 
-#define MODE_VERIFY    0
-#define MODE_SIGN      1
+#define MODE_UNSET     0
+#define MODE_VERIFY    1
+#define MODE_SIGN      2
 
 typedef struct {
     FILE *file;
 	char *filename;
 	uint32_t mode;
+    short pdf_x,         /* numbers from PDF header */
+          pdf_y;         /*  %PDF-<pdf_x>.<pdf_y>   */
 } sigil_t;
 
 sigil_err_t sigil_init(sigil_t **sgl);

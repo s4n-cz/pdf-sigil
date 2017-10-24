@@ -15,15 +15,16 @@ sigil_err_t sigil_init(sigil_t **sgl)
     // set default values
     (*sgl)->file     = NULL;
     (*sgl)->filename = NULL;
-    (*sgl)->mode     = ERR_NO;
-
+    (*sgl)->mode     = MODE_UNSET;
+    (*sgl)->pdf_x    = 0;
+    (*sgl)->pdf_y    = 0;
     return (sigil_err_t)ERR_NO;
 }
 
 sigil_err_t sigil_config_file(sigil_t *sgl, const char *filename)
 {
-    // input parameter checks - filename
-    if (filename == NULL) {
+    // function parameter checks
+    if (sgl == NULL || filename == NULL) {
         return (sigil_err_t)ERR_PARAM;
     }
 
@@ -49,6 +50,16 @@ sigil_err_t sigil_config_file(sigil_t *sgl, const char *filename)
 
 void sigil_config_mode(sigil_t *sgl, uint32_t mode)
 {
+    // function parameter checks
+    if (sgl == NULL) {
+        return (sigil_err_t)ERR_PARAM;
+    }
+
+    if (mode != MODE_VERIFY &&
+        mode != MODE_SIGN) {
+        return (sigil_err_t)ERR_PARAM;
+    }
+
     sgl->mode = mode;
 }
 
