@@ -9,18 +9,24 @@
 #define MODE_VERIFY    1
 #define MODE_SIGN      2
 
+typedef uint32_t mode_t;
+
 typedef struct {
-    FILE *file;
-	char *filename;
-	uint32_t mode;
-    short pdf_x,         /* numbers from PDF header */
-          pdf_y;         /*  %PDF-<pdf_x>.<pdf_y>   */
+    FILE  *file;
+	char  *filepath;
+	mode_t mode;
+    short  pdf_x,             /* numbers from PDF header */
+           pdf_y;             /*   %PDF-<pdf_x>.<pdf_y>  */
+    size_t pdf_start_offset;  /* most time should be 0   */
+
 } sigil_t;
+
+sigil_err_t validate_mode(mode_t mode);
 
 sigil_err_t sigil_init(sigil_t **sgl);
 
-sigil_err_t sigil_config_file(sigil_t *sgl, const char *filename);
-void sigil_config_mode(sigil_t *sgl, uint32_t mode);
+sigil_err_t sigil_config_file(sigil_t *sgl, const char *filepath);
+sigil_err_t sigil_config_mode(sigil_t *sgl, mode_t mode);
 
 sigil_err_t sigil_process(sigil_t *sgl);
 
