@@ -9,7 +9,7 @@
 #define ERR_ALLOC        0x0001 /* ... | 0000 0000 | 0000 0001 */
 #define ERR_PARAM        0x0002 /* ... | 0000 0000 | 0000 0010 */
 #define ERR_IO           0x0004 /* ... | 0000 0000 | 0000 0100 */
-#define ERR_4            0x0008 /* ... | 0000 0000 | 0000 1000 */
+#define ERR_PDF_CONT     0x0008 /* ... | 0000 0000 | 0000 1000 */
 #define ERR_5            0x0010 /* ... | 0000 0000 | 0001 0000 */
 #define ERR_6            0x0020 /* ... | 0000 0000 | 0010 0000 */
 #define ERR_7            0x0040 /* ... | 0000 0000 | 0100 0000 */
@@ -26,5 +26,7 @@
 typedef uint32_t sigil_err_t;
 
 void sigil_err_write(FILE *out, sigil_err_t err);
+
+int sigil_error_self_test(int quiet);
 
 #endif /* PDF_SIGIL_ERROR_H */
