@@ -39,6 +39,7 @@ sigil_err_t sigil_config_file(sigil_t *sgl, const char *filepath)
         return (sigil_err_t)ERR_PARAM;
     }
 
+    // get size of filepath
     size_t filepath_len = strlen(filepath);
     if (filepath_len <= 0) {
         return (sigil_err_t)ERR_PARAM;
@@ -59,7 +60,7 @@ sigil_err_t sigil_config_file(sigil_t *sgl, const char *filepath)
     return (sigil_err_t)ERR_NO;
 }
 
-sigil_err_t sigil_config_mode(sigil_t *sgl, uint32_t mode)
+sigil_err_t sigil_config_mode(sigil_t *sgl, mode_t mode)
 {
     // function parameter checks
     if (sgl == NULL || validate_mode(mode) != ERR_NO) {
@@ -129,7 +130,9 @@ static sigil_err_t parse_header(sigil_t *sgl)
         return (sigil_err_t)ERR_PDF_CONT;
     }
 
+    // offset counted from % char -> subtract header size
     sgl->pdf_start_offset = offset - 8;
+
     return (sigil_err_t)ERR_NO;
 }
 
@@ -211,6 +214,44 @@ int sigil_sigil_self_test(int quiet)
     sigil_t *sgl = NULL;
     sigil_err_t err = sigil_init(&sgl);
     if (err != ERR_NO || sgl == NULL) {
+        if (!quiet)
+            printf("FAILED\n");
+
+        goto failed;
+    }
+
+    if (!quiet)
+        printf("OK\n");
+
+    // TEST: fn sigil_config_file
+    if (!quiet)
+        printf("    - %-30s", "fn sigil_config_file");
+
+    err = sigil_config_file(sgl, "test/uznavany_bez_razitka_bez_revinfo_27_2_2012_CMS.pdf");
+    if (err != ERR_NO || sgl->filepath == NULL) {
+        if (!quiet)
+            printf("FAILED\n");
+
+        goto failed;
+    }
+
+    if (!quiet)
+        printf("OK\n");
+
+    // TEST: fn sigil_config_mode
+    if (!quiet)
+        printf("    - %-30s", "fn sigil_config_mode");
+
+    err = sigil_config_mode(sgl, 0xffff);
+    if (err != ERR_PARAM) {
+        if (!quiet)
+            printf("FAILED\n");
+
+        goto failed;
+    }
+
+    err = sigil_config_mode(sgl, MODE_VERIFY);
+    if (err != ERR_NO) {
         if (!quiet)
             printf("FAILED\n");
 
