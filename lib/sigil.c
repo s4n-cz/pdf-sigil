@@ -84,7 +84,7 @@ static sigil_err_t parse_header(sigil_t *sgl)
     int found = 0,
         c;
 
-    while ((c = fgetc(sgl->file) != EOF)) {
+    while ((c = fgetc(sgl->file)) != EOF && found < 8) {
         // count offset from start to '%' char
         // PDF header size is subtracted later
         offset++;
@@ -260,6 +260,40 @@ int sigil_sigil_self_test(int quiet)
 
     if (!quiet)
         printf("OK\n");
+
+    // TEST: fn parse_header
+    if (!quiet)
+        printf("    - %-30s", "fn parse_header");
+
+    // prepare
+    sgl->file = fopen(sgl->filepath, "r");
+
+    if (sgl->file == NULL) {
+        if (!quiet)
+            printf("TEST PROCEDURE FAILED\n");
+
+        goto failed;
+    }
+
+    err = parse_header(sgl);
+    if (err != ERR_NO || sgl->pdf_x != 1 || sgl->pdf_y != 3 ||
+        sgl->pdf_start_offset != 0)
+    {
+        if (!quiet)
+            printf("FAILED\n");
+
+        goto failed;
+    }
+
+    if (!quiet)
+        printf("OK\n");
+
+    // revert changes from parse_header
+    fclose(sgl->file);
+    sgl->file             = NULL;
+    sgl->pdf_x            = 0;
+    sgl->pdf_y            = 0;
+    sgl->pdf_start_offset = 0;
 
     // all tests done
     if (!quiet) {
