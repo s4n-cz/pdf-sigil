@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "auxiliary.h"
 #include "error.h"
 
 
@@ -33,7 +32,7 @@ void sigil_err_write(FILE *out, sigil_err_t err)
 int sigil_error_self_test(int quiet)
 {
     if (!quiet)
-        printf("\n\n + Testing module: error\n");
+        printf("\n + Testing module: error\n");
 
     // TEST: error codes
     if (!quiet)
@@ -56,7 +55,7 @@ int sigil_error_self_test(int quiet)
     if (!quiet)
         printf("OK\n");
 
-    // TEST: sigil_err_write(...)
+    // TEST: fn sigil_err_write
     if (!quiet)
         printf("    - %-30s", "fn sigil_err_write");
 
@@ -95,7 +94,7 @@ int sigil_error_self_test(int quiet)
         }
     } else {
         if (!quiet)
-            printf("...\n");
+            printf("SKIPPED\n");
     }
 
     // all tests done

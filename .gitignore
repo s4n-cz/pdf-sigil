@@ -1,3 +1,9 @@
+# Output
+build/
+
+
+# GENERAL
+
 # Prerequisites
 *.d
 

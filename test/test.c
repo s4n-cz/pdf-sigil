@@ -1,5 +1,6 @@
 #include <string.h>
 #include "error.h"
+#include "sigil.h"
 
 int main(int argc, char **argv)
 {
@@ -13,6 +14,9 @@ int main(int argc, char **argv)
     }
 
     if (sigil_error_self_test(quiet) != 0) {
+        failed++;
+    }
+    if (sigil_sigil_self_test(quiet) != 0) {
         failed++;
     }
 
