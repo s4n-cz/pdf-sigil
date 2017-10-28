@@ -130,7 +130,7 @@ static sigil_err_t parse_header(sigil_t *sgl)
         return (sigil_err_t)ERR_PDF_CONT;
     }
 
-    // offset counted from % char -> subtract header size
+    // offset counted with header -> subtract header size
     sgl->pdf_start_offset = offset - 8;
 
     return (sigil_err_t)ERR_NO;
