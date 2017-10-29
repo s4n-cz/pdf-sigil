@@ -4,29 +4,24 @@
 #include "error.h"
 
 
-void sigil_err_write(FILE *out, sigil_err_t err)
+const char *sigil_err_string(sigil_err_t err)
 {
-    if (err == ERR_NO) {
-        fprintf(out, "NO ERROR\n");
-        fflush(out);
-        return;
-    }
+    if (err == ERR_NO)
+        return "NO ERROR";
 
-    if (err & ERR_ALLOC) {
-        fprintf(out, "ERROR during allocation\n");
-    }
-    if (err & ERR_PARAM) {
-        fprintf(out, "ERROR wrong parameter\n");
-    }
-    if (err & ERR_IO) {
-        fprintf(out, "ERROR input/output\n");
-    }
-    if (err & ERR_PDF_CONT) {
-        fprintf(out, "ERROR doesn't understand PDF file content\n");
-    }
-    //	...
+    if (err & ERR_ALLOC)
+        return "ERROR during allocation";
 
-    fflush(out);
+    if (err & ERR_PARAM)
+        return "ERROR wrong parameter";
+
+    if (err & ERR_IO)
+        return "ERROR input/output";
+
+    if (err & ERR_PDF_CONT)
+        return "ERROR doesn't understand PDF file content";
+
+    return "ERROR unknown";
 }
 
 int sigil_error_self_test(int quiet)
@@ -55,47 +50,22 @@ int sigil_error_self_test(int quiet)
     if (!quiet)
         printf("OK\n");
 
-    // TEST: fn sigil_err_write
+    // TEST: fn sigil_err_string
     if (!quiet)
-        printf("    - %-30s", "fn sigil_err_write");
+        printf("    - %-30s", "fn sigil_err_string");
 
-    char *file_buf;
-    size_t len;
-    FILE *filestream = open_memstream(&file_buf, &len);
-
-    if (filestream) {
-        sigil_err_write(filestream, ERR_NO);
-        sigil_err_write(filestream, ERR_ALLOC | ERR_IO);
-        sigil_err_write(filestream, 0xffff);
-        fflush(filestream);
-
-        const char *expected_data =                      \
-            "NO ERROR\n"                                 \
-            "ERROR during allocation\n"                  \
-            "ERROR input/output\n"                       \
-            "ERROR during allocation\n"                  \
-            "ERROR wrong parameter\n"                    \
-            "ERROR input/output\n"                       \
-            "ERROR doesn't understand PDF file content\n";
-
-        int cmp = strncmp(file_buf, expected_data, len);
-
-        fclose(filestream);
-        free(file_buf);
-
-        if (cmp == 0) {
-            if (!quiet)
-                printf("OK\n");
-        } else {
-            if (!quiet)
-                printf("FAILED\n");
-
-            goto failed;
-        }
-    } else {
+    if (strcmp(sigil_err_string(ERR_NO   ), "NO ERROR"               ) != 0 ||
+        strcmp(sigil_err_string(ERR_ALLOC), "ERROR during allocation") != 0 ||
+        strcmp(sigil_err_string(0x800000 ), "ERROR unknown"          ) != 0 )
+    {
         if (!quiet)
-            printf("SKIPPED\n");
+            printf("FAILED\n");
+
+        goto failed;
     }
+
+    if (!quiet)
+        printf("OK\n");
 
     // all tests done
     if (!quiet) {
@@ -110,5 +80,6 @@ failed:
         printf("   FAILED\n");
         fflush(stdout);
     }
+
     return 1;
 }

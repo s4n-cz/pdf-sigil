@@ -30,16 +30,17 @@ $(BUILD_DIR)/libpdf-sigil.a: $(LIB_O) | $(BUILD_DIR)
 $(BUILD_DIR)/libpdf-sigil.so: $(LIB_O) | $(BUILD_DIR)
 	$(CC) -shared -fPIC -o $@ $^
 
-# lib *.c -> *.o
+# lib/*.c -> build/lib/*.o
 $(BUILD_DIR)/$(LIB_DIR)/%.o: $(LIB_DIR)/%.c | $(BUILD_DIR)/$(LIB_DIR)
 	$(CC) $(CFLAGS) $< -o $@
 
+# build and run tests
 .PHONY: test
 test: $(BUILD_DIR)/libpdf-sigil.a $(TEST_O) | $(BUILD_DIR)/$(TEST_DIR)
 	$(LD) $(LDFLAGS) $(TEST_O) $(BUILD_DIR)/libpdf-sigil.a -o $(BUILD_DIR)/$(TEST_DIR)/test
 	$(BUILD_DIR)/$(TEST_DIR)/test
 
-# test *.c -> *.o
+# test/*.c -> build/test/*.o
 $(BUILD_DIR)/$(TEST_DIR)/%.o: $(TEST_DIR)/%.c | $(BUILD_DIR)/$(TEST_DIR)
 	$(CC) $(CFLAGS) $< -o $@
 
