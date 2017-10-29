@@ -2,7 +2,7 @@
 CC=gcc
 LD=gcc
 AR=ar
-CFLAGS= -O2 -Wall -pedantic -I include -c
+CFLAGS= -c -fPIC -O2 -Wall -pedantic -I include
 LDFLAGS=
 
 # directories
@@ -19,12 +19,16 @@ TEST_O=$(TEST_SRC:%.c=$(BUILD_DIR)/$(TEST_DIR)/%.o)
 
 all: lib test
 
-lib: $(BUILD_DIR)/libpdf-sigil.a
+# static + shared library
+lib: $(BUILD_DIR)/libpdf-sigil.a $(BUILD_DIR)/libpdf-sigil.so
 
+# static library
 $(BUILD_DIR)/libpdf-sigil.a: $(LIB_O) | $(BUILD_DIR)
 	$(AR) rcs $@ $^
 
-#$(BUILD_DIR)/libpdf-sigil.so:
+# shared library
+$(BUILD_DIR)/libpdf-sigil.so: $(LIB_O) | $(BUILD_DIR)
+	$(CC) -shared -fPIC -o $@ $^
 
 # lib *.c -> *.o
 $(BUILD_DIR)/$(LIB_DIR)/%.o: $(LIB_DIR)/%.c | $(BUILD_DIR)/$(LIB_DIR)
