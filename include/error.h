@@ -4,6 +4,7 @@
 #include <stdio.h>  // FILE
 #include <stdint.h> // uint32_t
 
+
 #define ERR_NO           0x0000 // [_|_|_|x] 0000 0000
 #define ERR_ALLOC        0x0001 // [_|_|_|x] 0000 0001
 #define ERR_PARAM        0x0002 // [_|_|_|x] 0000 0010
