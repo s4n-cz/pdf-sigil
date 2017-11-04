@@ -17,8 +17,8 @@ typedef struct {
 	mode_t mode;
     short  pdf_x,             /* numbers from PDF header */
            pdf_y;             /*   %PDF-<pdf_x>.<pdf_y>  */
-    size_t pdf_start_offset;  /* most time should be 0   */
-
+    size_t pdf_start_offset;  /* offset of %PDF-x.y      */
+    size_t startxref;
 } sigil_t;
 
 sigil_err_t sigil_init(sigil_t **sgl);
