@@ -1,5 +1,7 @@
 #include <string.h>
+#include "config.h"
 #include "error.h"
+#include "header.h"
 #include "sigil.h"
 
 int main(int argc, char **argv)
@@ -17,7 +19,11 @@ int main(int argc, char **argv)
         printf("\n STARTING TEST PROCEDURE\n");
 
     // call self_test function for each module
+    if (sigil_config_self_test(quiet) != 0)
+        failed++;
     if (sigil_error_self_test(quiet) != 0)
+        failed++;
+    if (sigil_header_self_test(quiet) != 0)
         failed++;
     if (sigil_sigil_self_test(quiet) != 0)
         failed++;
