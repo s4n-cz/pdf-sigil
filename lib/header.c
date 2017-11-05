@@ -147,7 +147,29 @@ int sigil_header_self_test(int quiet)
     fclose(sgl->file);
     sgl->file = NULL;
 
-    // TODO add at least one wrong
+    // TEST: wrong_1
+    if (!quiet)
+        printf("    - %-30s", "wrong_1");
+
+    char *wrong_1 = "%%P%PD%PDF%PDF-%PDF-x%PDF-1%PDF-1.%PDF-1.@PDF-1.3";
+    sgl->file = fmemopen(wrong_1,
+                         (strlen(wrong_1) + 1) * sizeof(char),
+                         "r");
+    if (sgl->file == NULL)
+        goto failed;
+
+    if (process_header(sgl) == ERR_NO) {
+        if (!quiet)
+            printf("FAILED\n");
+
+        goto failed;
+    }
+
+    if (!quiet)
+        printf("OK\n");
+
+    fclose(sgl->file);
+    sgl->file = NULL;
 
     // all tests done
     if (!quiet) {
@@ -158,6 +180,10 @@ int sigil_header_self_test(int quiet)
     return 0;
 
 failed:
+    if (sgl->file) {
+        fclose(sgl->file);
+    }
+
     if (!quiet) {
         printf("   FAILED\n");
         fflush(stdout);
