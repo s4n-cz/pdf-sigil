@@ -2,8 +2,11 @@
 CC=gcc
 LD=gcc
 AR=ar
-CFLAGS= -c -fPIC -O2 -Wall -pedantic -I include
+CFLAGS= -c -fPIC -Wall -pedantic -I include
 LDFLAGS=
+
+# debug
+#CFLAGS += -g -O0
 
 # directories
 LIB_DIR=lib

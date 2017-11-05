@@ -13,8 +13,8 @@ typedef uint32_t mode_t;
 
 typedef struct {
     FILE  *file;
-	char  *filepath;
-	mode_t mode;
+    char  *filepath;
+    mode_t mode;
     short  pdf_x,             /* numbers from PDF header */
            pdf_y;             /*   %PDF-<pdf_x>.<pdf_y>  */
     size_t pdf_start_offset;  /* offset of %PDF-x.y      */
