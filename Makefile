@@ -26,42 +26,42 @@ lib: $(BUILD_DIR)/libpdf-sigil.a $(BUILD_DIR)/libpdf-sigil.so
 
 # static library
 $(BUILD_DIR)/libpdf-sigil.a: $(LIB_O) | $(BUILD_DIR)
-    $(AR) rcs $@ $^
+	$(AR) rcs $@ $^
 
 # shared library
 $(BUILD_DIR)/libpdf-sigil.so: $(LIB_O) | $(BUILD_DIR)
-    $(CC) -shared -fPIC -o $@ $^
+	$(CC) -shared -fPIC -o $@ $^
 
 # lib/*.c -> build/lib/*.o
 $(BUILD_DIR)/$(LIB_DIR)/%.o: $(LIB_DIR)/%.c | $(BUILD_DIR)/$(LIB_DIR)
-    $(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $< -o $@
 
 # run tests
 .PHONY: test
 test: $(BUILD_DIR)/$(TEST_DIR)/test
-    $(BUILD_DIR)/$(TEST_DIR)/test
+	$(BUILD_DIR)/$(TEST_DIR)/test
 
 # test binary
 $(BUILD_DIR)/$(TEST_DIR)/test: $(BUILD_DIR)/libpdf-sigil.a                     \
                                $(TEST_O) | $(BUILD_DIR)/$(TEST_DIR)
-    $(LD) $(LDFLAGS) $(TEST_O) $(BUILD_DIR)/libpdf-sigil.a                     \
-        -o $(BUILD_DIR)/$(TEST_DIR)/test
+	$(LD) $(LDFLAGS) $(TEST_O) $(BUILD_DIR)/libpdf-sigil.a                     \
+		-o $(BUILD_DIR)/$(TEST_DIR)/test
 
 # test/*.c -> build/test/*.o
 $(BUILD_DIR)/$(TEST_DIR)/%.o: $(TEST_DIR)/%.c | $(BUILD_DIR)/$(TEST_DIR)
-    $(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $< -o $@
 
 # If BUILD_DIR does not exist, create it
 $(BUILD_DIR):
-    mkdir -p $(BUILD_DIR)
+	mkdir -p $(BUILD_DIR)
 
 # If BUILD_DIR/LIB_DIR does not exist, create it
 $(BUILD_DIR)/$(LIB_DIR):
-    mkdir -p $(BUILD_DIR)/$(LIB_DIR)
+	mkdir -p $(BUILD_DIR)/$(LIB_DIR)
 
 # If BUILD_DIR/TEST_DIR does not exist, create it
 $(BUILD_DIR)/$(TEST_DIR):
-    mkdir -p $(BUILD_DIR)/$(TEST_DIR)
+	mkdir -p $(BUILD_DIR)/$(TEST_DIR)
 
 # Dependencies
 include Makefile.deps
@@ -69,10 +69,10 @@ include Makefile.deps
 Makefile.deps: $(addprefix $(LIB_DIR)/,     $(LIB_SRC) )                       \
                $(addprefix $(INCLUDE_DIR)/, $(LIB_H)   )                       \
                $(addprefix $(TEST_DIR)/,    $(TEST_SRC))
-    $(CC) -MM $(LIB_DIR)/*.c $(TEST_DIR)/*.c -I include |                      \
-    sed "s@\(^.*\.o:.*\)@$(BUILD_DIR)/$(LIB_DIR)/\1@" > Makefile.deps
+	$(CC) -MM $(LIB_DIR)/*.c $(TEST_DIR)/*.c -I include |                      \
+	sed "s@\(^.*\.o:.*\)@$(BUILD_DIR)/$(LIB_DIR)/\1@" > Makefile.deps
 
 .PHONY: clean
 clean:
-    rm -rf $(BUILD_DIR)
-    rm -f Makefile.deps
+	rm -rf $(BUILD_DIR)
+	rm -f Makefile.deps

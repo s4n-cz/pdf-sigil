@@ -57,6 +57,7 @@ sigil_err_t read_startxref(sigil_t *sgl)
                 free(buf);
                 return (sigil_err_t)ERR_PDF_CONT;
             }
+            sgl->startxref = 0;
             while (i < read && is_digit(buf[i])) {
                 sgl->startxref = 10 * sgl->startxref + buf[i] - '0';
             }
@@ -69,5 +70,6 @@ sigil_err_t read_startxref(sigil_t *sgl)
     if (sgl->startxref == 0) {
         return (sigil_err_t)ERR_PDF_CONT;
     }
+    
     return (sigil_err_t)ERR_NO;
 }
