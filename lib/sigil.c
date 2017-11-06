@@ -154,7 +154,7 @@ int sigil_sigil_self_test(int quiet)
     if (validate_mode(MODE_UNSET)  != ERR_PARAM ||
         validate_mode(MODE_VERIFY) != ERR_NO    ||
         validate_mode(MODE_SIGN)   != ERR_NO    ||
-        validate_mode(0xffff)      != ERR_PARAM  )
+        validate_mode(0xffff)      != ERR_PARAM )
     {
         if (!quiet)
             printf("FAILED\n");
@@ -261,5 +261,6 @@ failed:
         printf("   FAILED\n");
         fflush(stdout);
     }
+    
     return 1;
 }

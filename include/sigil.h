@@ -29,7 +29,7 @@ sigil_err_t sigil_config_mode(sigil_t *sgl, mode_t mode);
 
 sigil_err_t sigil_process(sigil_t *sgl);
 
-// ...
+// ... get functions
 
 void sigil_free(sigil_t *sgl);
 

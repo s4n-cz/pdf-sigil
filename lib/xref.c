@@ -26,13 +26,13 @@ sigil_err_t read_startxref(sigil_t *sgl)
     }
 
     // jump max XREF_SEARCH_OFFSET bytes from end
-    size_t jump_pos = MAX(0, file_size - XREF_SEARCH_OFFSET);
+    size_t jump_pos = MAX(0, (ssize_t)file_size - XREF_SEARCH_OFFSET);
     if (fseek(sgl->file, jump_pos, SEEK_SET) != 0) {
         return (sigil_err_t)ERR_IO;
     }
 
     // prepare buffer for data
-    size_t buf_len = (file_size - jump_pos + 1) + 1;
+    size_t buf_len = file_size - jump_pos + 1;
     char *buf = malloc(buf_len * sizeof(char));
     if (buf == NULL) {
         return (sigil_err_t)ERR_ALLOC;
@@ -60,6 +60,7 @@ sigil_err_t read_startxref(sigil_t *sgl)
             sgl->startxref = 0;
             while (i < read && is_digit(buf[i])) {
                 sgl->startxref = 10 * sgl->startxref + buf[i] - '0';
+                i++;
             }
             break;
         }
@@ -70,6 +71,64 @@ sigil_err_t read_startxref(sigil_t *sgl)
     if (sgl->startxref == 0) {
         return (sigil_err_t)ERR_PDF_CONT;
     }
-    
+
     return (sigil_err_t)ERR_NO;
+}
+
+int sigil_xref_self_test(int quiet)
+{
+    if (!quiet)
+        printf("\n + Testing module: xref\n");
+
+    // prepare
+    sigil_t *sgl = NULL;
+
+    if (sigil_init(&sgl) != ERR_NO)
+        goto failed;
+
+    // TEST: fn read_startxref
+    if (!quiet)
+        printf("    - %-30s", "fn read_startxref");
+
+    char *correct_1 = "startxref\n"                                            \
+                      "1234567890\n"                                           \
+                      "%%EOF";
+    sgl->file = fmemopen(correct_1,
+                         (strlen(correct_1) + 1) * sizeof(char),
+                         "r");
+    if (sgl->file == NULL)
+        goto failed;
+
+    if (read_startxref(sgl) != ERR_NO ||
+        sgl->startxref != 1234567890  )
+    {
+        if (!quiet)
+            printf("FAILED\n");
+
+        goto failed;
+    }
+
+    if (!quiet)
+        printf("OK\n");
+
+    // all tests done
+    if (!quiet) {
+        printf("   PASSED\n");
+        fflush(stdout);
+    }
+
+    return 0;
+
+failed:
+    if (sgl->file) {
+        fclose(sgl->file);
+    }
+
+    if (!quiet) {
+        printf("   FAILED\n");
+        fflush(stdout);
+    }
+
+    return 1;
+
 }

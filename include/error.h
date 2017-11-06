@@ -1,8 +1,8 @@
 #ifndef PDF_SIGIL_ERROR_H
 #define PDF_SIGIL_ERROR_H
 
-#include <stdio.h>  // FILE
-#include <stdint.h> // uint32_t
+#include <stdio.h>
+#include <stdint.h>
 
 
 #define ERR_NO           0x0000 // [_|_|_|x] 0000 0000

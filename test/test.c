@@ -5,6 +5,7 @@
 #include "error.h"
 #include "header.h"
 #include "sigil.h"
+#include "xref.h"
 
 int main(int argc, char **argv)
 {
@@ -28,6 +29,8 @@ int main(int argc, char **argv)
     if (sigil_error_self_test(quiet) != 0)
         failed++;
     if (sigil_header_self_test(quiet) != 0)
+        failed++;
+    if (sigil_xref_self_test(quiet) != 0)
         failed++;
     if (sigil_sigil_self_test(quiet) != 0)
         failed++;
