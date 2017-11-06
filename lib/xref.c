@@ -20,19 +20,21 @@ sigil_err_t read_startxref(sigil_t *sgl)
     }
 
     // get file size
-    size_t file_size = ftell(sgl->file);
-    if (file_size < 0) {
-        return (sigil_err_t)ERR_IO;
+    if (sgl->file_size <= 0) {
+        sgl->file_size = ftell(sgl->file);
+        if (sgl->file_size < 0) {
+            return (sigil_err_t)ERR_IO;
+        }
     }
 
     // jump max XREF_SEARCH_OFFSET bytes from end
-    size_t jump_pos = MAX(0, (ssize_t)file_size - XREF_SEARCH_OFFSET);
+    size_t jump_pos = MAX(0, (ssize_t)sgl->file_size - XREF_SEARCH_OFFSET);
     if (fseek(sgl->file, jump_pos, SEEK_SET) != 0) {
         return (sigil_err_t)ERR_IO;
     }
 
     // prepare buffer for data
-    size_t buf_len = file_size - jump_pos + 1;
+    size_t buf_len = sgl->file_size - jump_pos + 1;
     char *buf = malloc(buf_len * sizeof(char));
     if (buf == NULL) {
         return (sigil_err_t)ERR_ALLOC;
@@ -100,6 +102,7 @@ int sigil_xref_self_test(int quiet)
         goto failed;
 
     if (read_startxref(sgl) != ERR_NO ||
+        sgl->file_size != 27          ||
         sgl->startxref != 1234567890  )
     {
         if (!quiet)

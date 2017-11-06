@@ -33,6 +33,7 @@ sigil_err_t sigil_init(sigil_t **sgl)
     (*sgl)->mode             = MODE_UNSET;
     (*sgl)->pdf_x            = 0;
     (*sgl)->pdf_y            = 0;
+    (*sgl)->file_size        = 0;
     (*sgl)->pdf_start_offset = 0;
     (*sgl)->startxref        = 0;
 
@@ -261,6 +262,6 @@ failed:
         printf("   FAILED\n");
         fflush(stdout);
     }
-    
+
     return 1;
 }

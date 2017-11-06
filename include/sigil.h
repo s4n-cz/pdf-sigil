@@ -17,6 +17,7 @@ typedef struct {
     mode_t mode;
     short  pdf_x,             /* numbers from PDF header */
            pdf_y;             /*   %PDF-<pdf_x>.<pdf_y>  */
+    size_t file_size;
     size_t pdf_start_offset;  /* offset of %PDF-x.y      */
     size_t startxref;
 } sigil_t;
