@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include "auxiliary.h"
 #include "config.h"
 #include "error.h"
 #include "header.h"
@@ -21,6 +22,8 @@ int main(int argc, char **argv)
 
     // call self_test function for each module
     if (sigil_config_self_test(quiet) != 0)
+        failed++;
+    if (sigil_auxiliary_self_test(quiet) != 0)
         failed++;
     if (sigil_error_self_test(quiet) != 0)
         failed++;

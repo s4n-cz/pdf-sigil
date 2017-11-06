@@ -14,4 +14,6 @@ int is_digit(const char c);
 
 int is_whitespace(const char c);
 
+int sigil_auxiliary_self_test(int quiet);
+
 #endif /* PDF_SIGIL_AUXILIARY_H */
