@@ -40,7 +40,7 @@ sigil_err_t sigil_init(sigil_t **sgl)
     return (sigil_err_t)ERR_NO;
 }
 
-sigil_err_t sigil_config_file(sigil_t *sgl, const char *filepath)
+sigil_err_t sigil_setup_file(sigil_t *sgl, const char *filepath)
 {
     // function parameter checks
     if (sgl == NULL || filepath == NULL) {
@@ -68,7 +68,7 @@ sigil_err_t sigil_config_file(sigil_t *sgl, const char *filepath)
     return (sigil_err_t)ERR_NO;
 }
 
-sigil_err_t sigil_config_mode(sigil_t *sgl, mode_t mode)
+sigil_err_t sigil_setup_mode(sigil_t *sgl, mode_t mode)
 {
     // function parameter checks
     if (sgl == NULL || validate_mode(mode) != ERR_NO) {
@@ -182,11 +182,11 @@ int sigil_sigil_self_test(int quiet)
     if (!quiet)
         printf("OK\n");
 
-    // TEST: fn sigil_config_file
+    // TEST: fn sigil_setup_file
     if (!quiet)
-        printf("    - %-30s", "fn sigil_config_file");
+        printf("    - %-30s", "fn sigil_setup_file");
 
-    err = sigil_config_file(sgl, "test/uznavany_bez_razitka_bez_revinfo_27_2_2012_CMS.pdf");
+    err = sigil_setup_file(sgl, "test/uznavany_bez_razitka_bez_revinfo_27_2_2012_CMS.pdf");
     if (err != ERR_NO || sgl->filepath == NULL) {
         if (!quiet)
             printf("FAILED\n");
@@ -197,11 +197,11 @@ int sigil_sigil_self_test(int quiet)
     if (!quiet)
         printf("OK\n");
 
-    // TEST: fn sigil_config_mode
+    // TEST: fn sigil_setup_mode
     if (!quiet)
-        printf("    - %-30s", "fn sigil_config_mode");
+        printf("    - %-30s", "fn sigil_setup_mode");
 
-    err = sigil_config_mode(sgl, 0xffff);
+    err = sigil_setup_mode(sgl, 0xffff);
     if (err != ERR_PARAM) {
         if (!quiet)
             printf("FAILED\n");
@@ -209,7 +209,7 @@ int sigil_sigil_self_test(int quiet)
         goto failed;
     }
 
-    err = sigil_config_mode(sgl, MODE_VERIFY);
+    err = sigil_setup_mode(sgl, MODE_VERIFY);
     if (err != ERR_NO) {
         if (!quiet)
             printf("FAILED\n");
