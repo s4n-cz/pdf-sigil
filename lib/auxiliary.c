@@ -2,25 +2,25 @@
 #include <stdio.h>
 #include "auxiliary.h"
 
-void sigil_zeroize(void *a, size_t cnt)
+void sigil_zeroize(void *a, size_t bytes)
 {
-    if (cnt <= 0 || a == NULL) {
+    if (bytes <= 0 || a == NULL) {
         return;
     }
 
     volatile char *p = a;
 
-    while (cnt--) {
+    while (bytes--) {
         *p++ = 0;
     }
 }
 
-int is_digit(const char c)
+int is_digit(const char_t c)
 {
     return (c >= '0' && c <= '9');
 }
 
-int is_whitespace(const char c)
+int is_whitespace(const char_t c)
 {
     return (c == 0x00 || // null
             c == 0x09 || // horizontal tab
@@ -55,12 +55,12 @@ int sigil_auxiliary_self_test(int quiet)
     if (!quiet)
         printf("    - %-30s", "fn sigil_zeroize");
 
-    char array[5];
+    char_t array[5];
     for (int i = 0; i < 5; i++) {
         array[i] = 1;
     }
 
-    sigil_zeroize(array + 1, 3);
+    sigil_zeroize(array + 1, 3 * sizeof(*array));
 
     if (array[0] != 1 ||
         array[1] != 0 ||

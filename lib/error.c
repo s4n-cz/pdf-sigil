@@ -1,10 +1,9 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include "error.h"
 
 
-const char *sigil_err_string(sigil_err_t err)
+const char_t *sigil_err_string(sigil_err_t err)
 {
     if (err == ERR_NO)
         return "NO ERROR";
@@ -39,7 +38,7 @@ int sigil_error_self_test(int quiet)
          ERR_9     +    ERR_10        +    ERR_11    +
          ERR_12    +    ERR_13        +    ERR_14    +
          ERR_15    +    ERR_16
-        ) != 0xffff || (ERR_NO != 0))
+        ) != 0xffff || (ERR_NO != 0)                 )
     {
         if (!quiet)
             printf("FAILED\n");

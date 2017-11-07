@@ -40,7 +40,7 @@ sigil_err_t sigil_init(sigil_t **sgl)
     return (sigil_err_t)ERR_NO;
 }
 
-sigil_err_t sigil_setup_file(sigil_t *sgl, const char *filepath)
+sigil_err_t sigil_setup_file(sigil_t *sgl, const char_t *filepath)
 {
     // function parameter checks
     if (sgl == NULL || filepath == NULL) {
@@ -54,7 +54,7 @@ sigil_err_t sigil_setup_file(sigil_t *sgl, const char *filepath)
     }
 
     // allocate space for copy of provided string
-    sgl->filepath = malloc((filepath_len + 1) * sizeof(filepath[0]));
+    sgl->filepath = malloc((filepath_len + 1) * sizeof(char_t));
     if (sgl->filepath == NULL) {
         return (sigil_err_t)ERR_ALLOC;
     }

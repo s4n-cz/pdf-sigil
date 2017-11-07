@@ -1,8 +1,12 @@
 #ifndef PDF_SIGIL_ERROR_H
 #define PDF_SIGIL_ERROR_H
 
-#include <stdio.h>
 #include <stdint.h>
+
+#ifndef CHAR_T
+#define CHAR_T
+    typedef char char_t;
+#endif /* CHAR_T */
 
 
 #define ERR_NO           0x0000 // [_|_|_|x] 0000 0000
@@ -25,7 +29,7 @@
 
 typedef uint32_t sigil_err_t;
 
-const char *sigil_err_string(sigil_err_t err);
+const char_t *sigil_err_string(sigil_err_t err);
 
 int sigil_error_self_test(int quiet);
 

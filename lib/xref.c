@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include "auxiliary.h"
 #include "config.h"
@@ -35,13 +36,13 @@ sigil_err_t read_startxref(sigil_t *sgl)
 
     // prepare buffer for data
     size_t buf_len = sgl->file_size - jump_pos + 1;
-    char *buf = malloc(buf_len * sizeof(char));
+    char_t *buf = malloc(buf_len * sizeof(char_t));
     if (buf == NULL) {
         return (sigil_err_t)ERR_ALLOC;
     }
 
     // copy data from the end of file
-    size_t read = fread(buf, sizeof(char), buf_len - 1, sgl->file);
+    size_t read = fread(buf, sizeof(*buf), buf_len - 1, sgl->file);
     if (read <= 0) {
         free(buf);
         return (sigil_err_t)ERR_IO;
@@ -92,11 +93,11 @@ int sigil_xref_self_test(int quiet)
     if (!quiet)
         printf("    - %-30s", "fn read_startxref");
 
-    char *correct_1 = "startxref\n"                                            \
-                      "1234567890\n"                                           \
-                      "%%EOF";
+    char_t *correct_1 = "startxref\n"                                            \
+                        "1234567890\n"                                           \
+                        "\045\045EOF"; // %%EOF
     sgl->file = fmemopen(correct_1,
-                         (strlen(correct_1) + 1) * sizeof(char),
+                         (strlen(correct_1) + 1) * sizeof(*correct_1),
                          "r");
     if (sgl->file == NULL)
         goto failed;
