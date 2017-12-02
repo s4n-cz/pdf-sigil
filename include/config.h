@@ -9,6 +9,6 @@
 #define XREF_SEARCH_OFFSET      1024
 
 // validate values
-int sigil_config_self_test(int quiet);
+int sigil_config_self_test(int verbosity);
 
 #endif /* PDF_SIGIL_CONFIG_H */

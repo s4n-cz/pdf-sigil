@@ -39,6 +39,6 @@ sigil_err_t sigil_process(sigil_t *sgl);
 
 void sigil_free(sigil_t *sgl);
 
-int sigil_sigil_self_test(int quiet);
+int sigil_sigil_self_test(int verbosity);
 
 #endif /* PDF_SIGIL_SIGIL_H */

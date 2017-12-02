@@ -31,6 +31,6 @@ typedef uint32_t sigil_err_t;
 
 const char_t *sigil_err_string(sigil_err_t err);
 
-int sigil_error_self_test(int quiet);
+int sigil_error_self_test(int verbosity);
 
 #endif /* PDF_SIGIL_ERROR_H */

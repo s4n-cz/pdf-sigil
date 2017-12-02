@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "auxiliary.h"
 #include "header.h"
 #include "sigil.h"
 
@@ -143,94 +144,72 @@ void sigil_free(sigil_t *sgl)
     }
 }
 
-int sigil_sigil_self_test(int quiet)
+int sigil_sigil_self_test(int verbosity)
 {
-    if (!quiet)
-        printf("\n + Testing module: sigil\n");
+    v_print("\n + Testing module: sigil\n", 0, verbosity, 1);
 
     // TEST: fn validate_mode
-    if (!quiet)
-        printf("    - %-30s", "fn validate_mode");
+    v_print("    - fn validate_mode", -35, verbosity, 2);
 
     if (validate_mode(MODE_UNSET)  != ERR_PARAM ||
         validate_mode(MODE_VERIFY) != ERR_NO    ||
         validate_mode(MODE_SIGN)   != ERR_NO    ||
         validate_mode(0xffff)      != ERR_PARAM )
     {
-        if (!quiet)
-            printf("FAILED\n");
-
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    if (!quiet)
-        printf("OK\n");
+    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
 
     // TEST: fn sigil_init
-    if (!quiet)
-        printf("    - %-30s", "fn sigil_init");
+    v_print("    - fn sigil_init", -35, verbosity, 2);
 
     sigil_t *sgl = NULL;
     sigil_err_t err = sigil_init(&sgl);
     if (err != ERR_NO || sgl == NULL) {
-        if (!quiet)
-            printf("FAILED\n");
-
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    if (!quiet)
-        printf("OK\n");
+    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
 
     // TEST: fn sigil_setup_file
-    if (!quiet)
-        printf("    - %-30s", "fn sigil_setup_file");
+    v_print("    - fn sigil_setup_file", -35, verbosity, 2);
 
     err = sigil_setup_file(sgl, "test/uznavany_bez_razitka_bez_revinfo_27_2_2012_CMS.pdf");
     if (err != ERR_NO || sgl->filepath == NULL) {
-        if (!quiet)
-            printf("FAILED\n");
-
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    if (!quiet)
-        printf("OK\n");
+    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
 
     // TEST: fn sigil_setup_mode
-    if (!quiet)
-        printf("    - %-30s", "fn sigil_setup_mode");
+    v_print("    - fn sigil_setup_mode", -35, verbosity, 2);
 
     err = sigil_setup_mode(sgl, 0xffff);
     if (err != ERR_PARAM) {
-        if (!quiet)
-            printf("FAILED\n");
-
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
     err = sigil_setup_mode(sgl, MODE_VERIFY);
     if (err != ERR_NO) {
-        if (!quiet)
-            printf("FAILED\n");
-
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    if (!quiet)
-        printf("OK\n");
+    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
 
     // TEST: fn process_header
-    if (!quiet)
-        printf("    - %-30s", "fn process_header");
+    v_print("    - fn process_header", -35, verbosity, 2);
 
     // prepare
     sgl->file = fopen(sgl->filepath, "r");
 
     if (sgl->file == NULL) {
-        if (!quiet)
-            printf("TEST PROCEDURE FAILED\n");
-
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
@@ -238,30 +217,19 @@ int sigil_sigil_self_test(int quiet)
     if (err != ERR_NO || sgl->pdf_x != 1 || sgl->pdf_y != 3 ||
         sgl->pdf_start_offset != 0)
     {
-        if (!quiet)
-            printf("FAILED\n");
-
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    if (!quiet)
-        printf("OK\n");
+    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
 
     sigil_free(sgl);
 
     // all tests done
-    if (!quiet) {
-        printf("   PASSED\n");
-        fflush(stdout);
-    }
-
+    v_print(COLOR_GREEN "   PASSED\n" COLOR_RESET, 0, verbosity, 1);
     return 0;
 
 failed:
-    if (!quiet) {
-        printf("   FAILED\n");
-        fflush(stdout);
-    }
-
+    v_print(COLOR_RED "   FAILED\n" COLOR_RESET, 0, verbosity, 1);
     return 1;
 }

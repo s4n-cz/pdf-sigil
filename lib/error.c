@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include "auxiliary.h"
 #include "error.h"
 
 
@@ -23,14 +24,12 @@ const char_t *sigil_err_string(sigil_err_t err)
     return "ERROR unknown";
 }
 
-int sigil_error_self_test(int quiet)
+int sigil_error_self_test(int verbosity)
 {
-    if (!quiet)
-        printf("\n + Testing module: error\n");
+    v_print("\n + Testing module: error\n", 0, verbosity, 1);
 
     // TEST: error codes
-    if (!quiet)
-        printf("    - %-30s", "error codes");
+    v_print("    - error codes", -35, verbosity, 2);
 
     if ((ERR_NO    +    ERR_ALLOC     +    ERR_PARAM +
          ERR_IO    +    ERR_PDF_CONT  +    ERR_5     +
@@ -38,47 +37,32 @@ int sigil_error_self_test(int quiet)
          ERR_9     +    ERR_10        +    ERR_11    +
          ERR_12    +    ERR_13        +    ERR_14    +
          ERR_15    +    ERR_16
-        ) != 0xffff || (ERR_NO != 0)                 )
+        ) != 0xffff || ERR_NO != 0)
     {
-        if (!quiet)
-            printf("FAILED\n");
-
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    if (!quiet)
-        printf("OK\n");
+    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
 
     // TEST: fn sigil_err_string
-    if (!quiet)
-        printf("    - %-30s", "fn sigil_err_string");
+    v_print("    - fn sigil_err_string", -35, verbosity, 2);
 
     if (strcmp(sigil_err_string(ERR_NO   ), "NO ERROR"               ) != 0 ||
         strcmp(sigil_err_string(ERR_ALLOC), "ERROR during allocation") != 0 ||
         strcmp(sigil_err_string(0x800000 ), "ERROR unknown"          ) != 0 )
     {
-        if (!quiet)
-            printf("FAILED\n");
-
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    if (!quiet)
-        printf("OK\n");
+    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
 
     // all tests done
-    if (!quiet) {
-        printf("   PASSED\n");
-        fflush(stdout);
-    }
-
+    v_print(COLOR_GREEN "   PASSED\n" COLOR_RESET, 0, verbosity, 1);
     return 0;
 
 failed:
-    if (!quiet) {
-        printf("   FAILED\n");
-        fflush(stdout);
-    }
-
+    v_print(COLOR_RED "   FAILED\n" COLOR_RESET, 0, verbosity, 1);
     return 1;
 }

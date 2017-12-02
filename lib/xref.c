@@ -78,20 +78,20 @@ sigil_err_t read_startxref(sigil_t *sgl)
     return (sigil_err_t)ERR_NO;
 }
 
-int sigil_xref_self_test(int quiet)
+int sigil_xref_self_test(int verbosity)
 {
-    if (!quiet)
-        printf("\n + Testing module: xref\n");
+    v_print("\n + Testing module: xref\n", 0, verbosity, 1);
 
     // prepare
     sigil_t *sgl = NULL;
 
-    if (sigil_init(&sgl) != ERR_NO)
+    if (sigil_init(&sgl) != ERR_NO) {
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
+    }
 
     // TEST: fn read_startxref
-    if (!quiet)
-        printf("    - %-30s", "fn read_startxref");
+    v_print("    - fn read_startxref", -35, verbosity, 2);
 
     char_t *correct_1 = "startxref\n"                                            \
                         "1234567890\n"                                           \
@@ -99,28 +99,23 @@ int sigil_xref_self_test(int quiet)
     sgl->file = fmemopen(correct_1,
                          (strlen(correct_1) + 1) * sizeof(*correct_1),
                          "r");
-    if (sgl->file == NULL)
+    if (sgl->file == NULL) {
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
+    }
 
     if (read_startxref(sgl) != ERR_NO ||
         sgl->file_size != 27          ||
         sgl->startxref != 1234567890  )
     {
-        if (!quiet)
-            printf("FAILED\n");
-
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    if (!quiet)
-        printf("OK\n");
+    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
 
     // all tests done
-    if (!quiet) {
-        printf("   PASSED\n");
-        fflush(stdout);
-    }
-
+    v_print(COLOR_GREEN "   PASSED\n" COLOR_RESET, 0, verbosity, 1);
     return 0;
 
 failed:
@@ -128,11 +123,7 @@ failed:
         fclose(sgl->file);
     }
 
-    if (!quiet) {
-        printf("   FAILED\n");
-        fflush(stdout);
-    }
-
+    v_print(COLOR_RED "   FAILED\n" COLOR_RESET, 0, verbosity, 1);
     return 1;
 
 }

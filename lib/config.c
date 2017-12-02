@@ -1,52 +1,36 @@
 #include <stdio.h>
+#include "auxiliary.h"
 #include "config.h"
 
-int sigil_config_self_test(int quiet)
+int sigil_config_self_test(int verbosity)
 {
-    if (!quiet)
-        printf("\n + Validating config values\n");
+    v_print("\n + Validating config values\n", 0, verbosity, 1);
 
     // TEST: HEADER_SEARCH_OFFSET
-    if (!quiet)
-        printf("    - %-30s", "HEADER_SEARCH_OFFSET");
+    v_print("    - HEADER_SEARCH_OFFSET", -35, verbosity, 2);
 
     if (HEADER_SEARCH_OFFSET < 0) {
-        if (!quiet)
-            printf("FAILED\n");
-
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    if (!quiet)
-        printf("OK\n");
+    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
 
     // TEST: XREF_SEARCH_OFFSET
-    if (!quiet)
-        printf("    - %-30s", "XREF_SEARCH_OFFSET");
+    v_print("    - XREF_SEARCH_OFFSET", -35, verbosity, 2);
 
     if (XREF_SEARCH_OFFSET < 20) {
-        if (!quiet)
-            printf("FAILED\n");
-
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    if (!quiet)
-        printf("OK\n");
+    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
 
     // all tests done
-    if (!quiet) {
-        printf("   PASSED\n");
-        fflush(stdout);
-    }
-
+    v_print(COLOR_GREEN "   PASSED\n" COLOR_RESET, 0, verbosity, 1);
     return 0;
 
 failed:
-    if (!quiet) {
-        printf("   FAILED\n");
-        fflush(stdout);
-    }
-
+    v_print(COLOR_RED "   FAILED\n"COLOR_RESET, 0, verbosity, 1);
     return 1;
 }

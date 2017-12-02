@@ -72,10 +72,9 @@ sigil_err_t process_header(sigil_t *sgl)
     return (sigil_err_t)ERR_NO;
 }
 
-int sigil_header_self_test(int quiet)
+int sigil_header_self_test(int verbosity)
 {
-    if (!quiet)
-        printf("\n + Testing module: header\n");
+    v_print("\n + Testing module: header\n", 0, verbosity, 1);
 
     // prepare
     sigil_t *sgl = NULL;
@@ -84,37 +83,34 @@ int sigil_header_self_test(int quiet)
         goto failed;
 
     // TEST: correct_1
-    if (!quiet)
-        printf("    - %-30s", "correct_1");
+    v_print("    - correct_1", -35, verbosity, 2);
 
     char_t *correct_1 = "\x25PDF-1.1\n"             \
                         "abcdefghijklmnopqrstuvwxyz";
     sgl->file = fmemopen(correct_1,
                          (strlen(correct_1) + 1) * sizeof(*correct_1),
                          "r");
-    if (sgl->file == NULL)
+    if (sgl->file == NULL) {
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
+    }
 
     if (process_header(sgl) != ERR_NO ||
         sgl->pdf_x != 1               ||
         sgl->pdf_y != 1               ||
         sgl->pdf_start_offset != 0     )
     {
-        if (!quiet)
-            printf("FAILED\n");
-
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    if (!quiet)
-        printf("OK\n");
+    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
 
     fclose(sgl->file);
     sgl->file = NULL;
 
     // TEST: correct_2
-    if (!quiet)
-        printf("    - %-30s", "correct_2");
+    v_print("    - correct_2", -35, verbosity, 2);
 
     char_t *correct_2 = "\x1a\x5e\x93\x7e\x6f\x3c\x6a\x71\xbf\xda\x54\x91\xe5" \
                         "\x86\x08\x84\xaf\x8e\x89\x44\xab\xc4\x58\x0c\xb9\x31" \
@@ -128,56 +124,49 @@ int sigil_header_self_test(int quiet)
     sgl->file = fmemopen(correct_2,
                          (strlen(correct_2) + 1) * sizeof(*correct_2),
                          "r");
-    if (sgl->file == NULL)
+    if (sgl->file == NULL) {
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
+    }
 
     if (process_header(sgl) != ERR_NO ||
         sgl->pdf_x != 1               ||
         sgl->pdf_y != 2               ||
         sgl->pdf_start_offset != 50    )
     {
-        if (!quiet)
-            printf("FAILED\n");
-
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    if (!quiet)
-        printf("OK\n");
+    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
 
     fclose(sgl->file);
     sgl->file = NULL;
 
     // TEST: wrong_1
-    if (!quiet)
-        printf("    - %-30s", "wrong_1");
+    v_print("    - wrong_1", -35, verbosity, 2);
 
     char_t *wrong_1 = "\x25\x25PPD\x25PDF-\x25PDF-1\x25PDF-1..@PDF-1.3";
     sgl->file = fmemopen(wrong_1,
                          (strlen(wrong_1) + 1) * sizeof(*wrong_1),
                          "r");
-    if (sgl->file == NULL)
-        goto failed;
-
-    if (process_header(sgl) == ERR_NO) {
-        if (!quiet)
-            printf("FAILED\n");
-
+    if (sgl->file == NULL) {
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    if (!quiet)
-        printf("OK\n");
+    if (process_header(sgl) == ERR_NO) {
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
+        goto failed;
+    }
+
+    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
 
     fclose(sgl->file);
     sgl->file = NULL;
 
     // all tests done
-    if (!quiet) {
-        printf("   PASSED\n");
-        fflush(stdout);
-    }
-
+    v_print(COLOR_GREEN "   PASSED\n" COLOR_RESET, 0, verbosity, 1);
     return 0;
 
 failed:
@@ -185,10 +174,6 @@ failed:
         fclose(sgl->file);
     }
 
-    if (!quiet) {
-        printf("   FAILED\n");
-        fflush(stdout);
-    }
-
+    v_print(COLOR_RED "   FAILED\n" COLOR_RESET, 0, verbosity, 1);
     return 1;
 }

@@ -7,6 +7,6 @@
 
 sigil_err_t read_startxref(sigil_t *sgl);
 
-int sigil_xref_self_test(int quiet);
+int sigil_xref_self_test(int verbosity);
 
 #endif /* PDF_SIGIL_XREF_H */

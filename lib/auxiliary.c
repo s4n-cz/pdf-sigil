@@ -4,7 +4,7 @@
 
 void sigil_zeroize(void *a, size_t bytes)
 {
-    if (bytes <= 0 || a == NULL) {
+    if (a == NULL || bytes <= 0) {
         return;
     }
 
@@ -27,33 +27,34 @@ int is_whitespace(const char_t c)
             c == 0x0a || // line feed
             c == 0x0c || // form feed
             c == 0x0d || // carriage return
-            c == 0x20 ); // space
+            c == 0x20);  // space
 }
 
-int sigil_auxiliary_self_test(int quiet)
+void v_print(const char *txt, int align, int verbosity, int threshold)
 {
-    if (!quiet)
-        printf("\n + Testing module: auxiliary\n");
+    if (verbosity >= threshold) {
+        printf("%*s", align, txt);
+    }
+}
+
+int sigil_auxiliary_self_test(int verbosity)
+{
+    v_print("\n + Testing module: auxiliary\n", 0, verbosity, 1);
 
     // TEST: MIN and MAX macros
-    if (!quiet)
-        printf("    - %-30s", "MIN, MAX");
+    v_print("    - MIN, MAX", -35, verbosity, 2);
 
-    if (MIN(1, 2) != 1 ||
-        MAX(1, 2) != 2 )
+    if (MIN(MAX(1, 2), MIN(3, 4)) != 2 ||
+        MAX(MAX(1, 2), MIN(3, 4)) != 3)
     {
-        if (!quiet)
-            printf("FAILED\n");
-
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    if (!quiet)
-        printf("OK\n");
+    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
 
     // TEST: fn sigil_zeroize
-    if (!quiet)
-        printf("    - %-30s", "fn sigil_zeroize");
+    v_print("    - fn sigil_zeroize", -35, verbosity, 2);
 
     char_t array[5];
     for (int i = 0; i < 5; i++) {
@@ -68,18 +69,14 @@ int sigil_auxiliary_self_test(int quiet)
         array[3] != 0 ||
         array[4] != 1 )
     {
-        if (!quiet)
-            printf("FAILED\n");
-
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    if (!quiet)
-        printf("OK\n");
+    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
 
     // TEST: fn is_digit
-    if (!quiet)
-        printf("    - %-30s", "fn is_digit");
+    v_print("    - fn is_digit", -35, verbosity, 2);
 
     if ( is_digit('/') ||
         !is_digit('0') ||
@@ -87,45 +84,30 @@ int sigil_auxiliary_self_test(int quiet)
         !is_digit('9') ||
          is_digit(':') )
     {
-        if (!quiet)
-            printf("FAILED\n");
-
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    if (!quiet)
-        printf("OK\n");
+    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
 
     // TEST: fn is_whitespace
-    if (!quiet)
-        printf("    - %-30s", "fn is_whitespace");
+    v_print("    - fn is_whitespace", -35, verbosity, 2);
 
     if (!is_whitespace(0x09) ||
         !is_whitespace(0x20) ||
          is_whitespace('a')  )
     {
-        if (!quiet)
-            printf("FAILED\n");
-
+        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    if (!quiet)
-        printf("OK\n");
+    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
 
     // all tests done
-    if (!quiet) {
-        printf("   PASSED\n");
-        fflush(stdout);
-    }
-
+    v_print(COLOR_GREEN "   PASSED\n" COLOR_RESET, 0, verbosity, 1);
     return 0;
 
 failed:
-    if (!quiet) {
-        printf("   FAILED\n");
-        fflush(stdout);
-    }
-
+    v_print(COLOR_RED "   FAILED\n" COLOR_RESET, 0, verbosity, 1);
     return 1;
 }
