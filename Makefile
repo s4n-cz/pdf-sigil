@@ -44,6 +44,14 @@ $(BUILD_DIR)/$(LIB_DIR)/%.o: $(LIB_DIR)/%.c | $(BUILD_DIR)/$(LIB_DIR)
 test: $(BUILD_DIR)/$(TEST_DIR)/test
 	$(BUILD_DIR)/$(TEST_DIR)/test
 
+.PHONY: test_verbose
+test_verbose: $(BUILD_DIR)/$(TEST_DIR)/test
+	$(BUILD_DIR)/$(TEST_DIR)/test --verbose
+
+.PHONY: test_quiet
+test_quiet: $(BUILD_DIR)/$(TEST_DIR)/test
+	$(BUILD_DIR)/$(TEST_DIR)/test --quiet
+
 # test binary
 $(BUILD_DIR)/$(TEST_DIR)/test: $(BUILD_DIR)/libpdf-sigil.a                     \
                                $(TEST_O) | $(BUILD_DIR)/$(TEST_DIR)
@@ -54,15 +62,13 @@ $(BUILD_DIR)/$(TEST_DIR)/test: $(BUILD_DIR)/libpdf-sigil.a                     \
 $(BUILD_DIR)/$(TEST_DIR)/%.o: $(TEST_DIR)/%.c | $(BUILD_DIR)/$(TEST_DIR)
 	$(CC) $(CFLAGS) $< -o $@
 
-# If BUILD_DIR does not exist, create it
+# Dynamically create directory structure when needed
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-# If BUILD_DIR/LIB_DIR does not exist, create it
 $(BUILD_DIR)/$(LIB_DIR):
 	mkdir -p $(BUILD_DIR)/$(LIB_DIR)
-
-# If BUILD_DIR/TEST_DIR does not exist, create it
+	
 $(BUILD_DIR)/$(TEST_DIR):
 	mkdir -p $(BUILD_DIR)/$(TEST_DIR)
 
