@@ -5,13 +5,13 @@
 
 #ifndef CHAR_T
 #define CHAR_T
-    typedef char char_t;
+typedef char char_t;
 #endif /* CHAR_T */
 
 
-#define COLOR_RED     "\x1b[31m"
-#define COLOR_GREEN   "\x1b[32m"
-#define COLOR_RESET   "\x1b[0m"
+#define COLOR_RED        "\x1b[31m"
+#define COLOR_GREEN      "\x1b[32m"
+#define COLOR_RESET      "\x1b[0m"
 
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
@@ -23,7 +23,10 @@ int is_digit(const char_t c);
 
 int is_whitespace(const char_t c);
 
-void v_print(const char *txt, int align, int verbosity, int threshold);
+void print_module_name(const char *module_name, int verbosity);
+void print_module_result(int result, int verbosity);
+void print_test_item(const char *test_name, int verbosity);
+void print_test_result(int result, int verbosity);
 
 int sigil_auxiliary_self_test(int verbosity);
 

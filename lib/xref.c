@@ -80,18 +80,18 @@ sigil_err_t read_startxref(sigil_t *sgl)
 
 int sigil_xref_self_test(int verbosity)
 {
-    v_print("\n + Testing module: xref\n", 0, verbosity, 1);
+    print_module_name("xref", verbosity);
 
     // prepare
     sigil_t *sgl = NULL;
 
     if (sigil_init(&sgl) != ERR_NO) {
-        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
+        verbosity = MIN(verbosity, 1); // do not print test result "FAILED"
         goto failed;
     }
 
     // TEST: fn read_startxref
-    v_print("    - fn read_startxref", -35, verbosity, 2);
+    print_test_item("fn read_startxref", verbosity);
 
     char_t *correct_1 = "startxref\n"                                            \
                         "1234567890\n"                                           \
@@ -100,7 +100,6 @@ int sigil_xref_self_test(int verbosity)
                          (strlen(correct_1) + 1) * sizeof(*correct_1),
                          "r");
     if (sgl->file == NULL) {
-        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
@@ -108,14 +107,13 @@ int sigil_xref_self_test(int verbosity)
         sgl->file_size != 27          ||
         sgl->startxref != 1234567890  )
     {
-        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
+    print_test_result(1, verbosity);
 
     // all tests done
-    v_print(COLOR_GREEN "   PASSED\n" COLOR_RESET, 0, verbosity, 1);
+    print_module_result(1, verbosity);
     return 0;
 
 failed:
@@ -123,7 +121,7 @@ failed:
         fclose(sgl->file);
     }
 
-    v_print(COLOR_RED "   FAILED\n" COLOR_RESET, 0, verbosity, 1);
+    print_test_result(0, verbosity);
+    print_module_result(0, verbosity);
     return 1;
-
 }

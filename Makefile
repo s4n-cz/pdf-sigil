@@ -68,9 +68,14 @@ $(BUILD_DIR):
 
 $(BUILD_DIR)/$(LIB_DIR):
 	mkdir -p $(BUILD_DIR)/$(LIB_DIR)
-	
+
 $(BUILD_DIR)/$(TEST_DIR):
 	mkdir -p $(BUILD_DIR)/$(TEST_DIR)
+
+.PHONY: clean
+clean:
+	rm -rf $(BUILD_DIR)
+	rm -f Makefile.deps
 
 # Dependencies
 include Makefile.deps
@@ -80,8 +85,3 @@ Makefile.deps: $(addprefix $(LIB_DIR)/,     $(LIB_SRC) )                       \
                $(addprefix $(TEST_DIR)/,    $(TEST_SRC))
 	$(CC) -MM $(LIB_DIR)/*.c $(TEST_DIR)/*.c -I include |                      \
 	sed "s@\(^.*\.o:.*\)@$(BUILD_DIR)/$(LIB_DIR)/\1@" > Makefile.deps
-
-.PHONY: clean
-clean:
-	rm -rf $(BUILD_DIR)
-	rm -f Makefile.deps

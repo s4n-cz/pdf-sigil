@@ -4,33 +4,32 @@
 
 int sigil_config_self_test(int verbosity)
 {
-    v_print("\n + Validating config values\n", 0, verbosity, 1);
+    print_module_name("config", verbosity);
 
     // TEST: HEADER_SEARCH_OFFSET
-    v_print("    - HEADER_SEARCH_OFFSET", -35, verbosity, 2);
+    print_test_item("HEADER_SEARCH_OFFSET", verbosity);
 
     if (HEADER_SEARCH_OFFSET < 0) {
-        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
+    print_test_result(1, verbosity);
 
     // TEST: XREF_SEARCH_OFFSET
-    v_print("    - XREF_SEARCH_OFFSET", -35, verbosity, 2);
+    print_test_item("XREF_SEARCH_OFFSET", verbosity);
 
     if (XREF_SEARCH_OFFSET < 20) {
-        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
+    print_test_result(1, verbosity);
 
     // all tests done
-    v_print(COLOR_GREEN "   PASSED\n" COLOR_RESET, 0, verbosity, 1);
+    print_module_result(1, verbosity);
     return 0;
 
 failed:
-    v_print(COLOR_RED "   FAILED\n"COLOR_RESET, 0, verbosity, 1);
+    print_test_result(0, verbosity);
+    print_module_result(0, verbosity);
     return 1;
 }

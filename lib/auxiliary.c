@@ -30,31 +30,63 @@ int is_whitespace(const char_t c)
             c == 0x20);  // space
 }
 
-void v_print(const char *txt, int align, int verbosity, int threshold)
+void print_module_name(const char *module_name, int verbosity)
 {
-    if (verbosity >= threshold) {
-        printf("%*s", align, txt);
+    if (verbosity < 1)
+        return;
+
+    printf("\n + Testing module: %s\n", module_name);
+}
+
+void print_module_result(int result, int verbosity)
+{
+    if (verbosity < 1)
+        return;
+
+    if (result == 1) {
+        printf(COLOR_GREEN "   PASSED\n" COLOR_RESET);
+    } else {
+        printf(COLOR_RED "   FAILED\n" COLOR_RESET);
+    }
+}
+
+void print_test_item(const char *test_name, int verbosity)
+{
+    if (verbosity < 2)
+        return;
+
+    printf("    - %-30s", test_name);
+}
+
+void print_test_result(int result, int verbosity)
+{
+    if (verbosity < 2)
+        return;
+
+    if (result == 1) {
+        printf(COLOR_GREEN "OK\n" COLOR_RESET);
+    } else {
+        printf(COLOR_RED "FAILED\n" COLOR_RESET);
     }
 }
 
 int sigil_auxiliary_self_test(int verbosity)
 {
-    v_print("\n + Testing module: auxiliary\n", 0, verbosity, 1);
+    print_module_name("auxiliary", verbosity);
 
     // TEST: MIN and MAX macros
-    v_print("    - MIN, MAX", -35, verbosity, 2);
+    print_test_item("MIN, MAX", verbosity);
 
     if (MIN(MAX(1, 2), MIN(3, 4)) != 2 ||
         MAX(MAX(1, 2), MIN(3, 4)) != 3)
     {
-        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
+    print_test_result(1, verbosity);
 
     // TEST: fn sigil_zeroize
-    v_print("    - fn sigil_zeroize", -35, verbosity, 2);
+    print_test_item("fn sigil_zeroize", verbosity);
 
     char_t array[5];
     for (int i = 0; i < 5; i++) {
@@ -69,14 +101,13 @@ int sigil_auxiliary_self_test(int verbosity)
         array[3] != 0 ||
         array[4] != 1 )
     {
-        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
+    print_test_result(1, verbosity);
 
     // TEST: fn is_digit
-    v_print("    - fn is_digit", -35, verbosity, 2);
+    print_test_item("fn is_digit", verbosity);
 
     if ( is_digit('/') ||
         !is_digit('0') ||
@@ -84,30 +115,32 @@ int sigil_auxiliary_self_test(int verbosity)
         !is_digit('9') ||
          is_digit(':') )
     {
-        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
+    print_test_result(1, verbosity);
 
     // TEST: fn is_whitespace
-    v_print("    - fn is_whitespace", -35, verbosity, 2);
+    print_test_item("fn is_whitespace", verbosity);
 
-    if (!is_whitespace(0x09) ||
-        !is_whitespace(0x20) ||
-         is_whitespace('a')  )
+    if (!is_whitespace(0x00) || is_whitespace(0x01) ||
+        !is_whitespace(0x09) || is_whitespace(0x08) ||
+        !is_whitespace(0x0a) || is_whitespace(0x0b) ||
+        !is_whitespace(0x0c) || is_whitespace('a' ) ||
+        !is_whitespace(0x0d) || is_whitespace('!' ) ||
+        !is_whitespace(0x20) || is_whitespace('_' ) )
     {
-        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
+    print_test_result(1, verbosity);
 
     // all tests done
-    v_print(COLOR_GREEN "   PASSED\n" COLOR_RESET, 0, verbosity, 1);
+    print_module_result(1, verbosity);
     return 0;
 
 failed:
-    v_print(COLOR_RED "   FAILED\n" COLOR_RESET, 0, verbosity, 1);
+    print_test_result(0, verbosity);
+    print_module_result(0, verbosity);
     return 1;
 }

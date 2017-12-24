@@ -4,6 +4,7 @@
 #include "auxiliary.h"
 #include "header.h"
 #include "sigil.h"
+#include "xref.h"
 
 
 static sigil_err_t validate_mode(mode_t mode)
@@ -83,9 +84,16 @@ sigil_err_t sigil_setup_mode(sigil_t *sgl, mode_t mode)
 
 static sigil_err_t process_trailer(sigil_t *sgl)
 {
+    sigil_err_t err;
+
     // function parameter checks
     if (sgl == NULL || sgl->file == NULL) {
         return (sigil_err_t)ERR_PARAM;
+    }
+
+    err = read_startxref(sgl);
+    if (err != ERR_NO) {
+        return err;
     }
 
     // TODO
@@ -146,70 +154,64 @@ void sigil_free(sigil_t *sgl)
 
 int sigil_sigil_self_test(int verbosity)
 {
-    v_print("\n + Testing module: sigil\n", 0, verbosity, 1);
+    print_module_name("sigil", verbosity);
 
     // TEST: fn validate_mode
-    v_print("    - fn validate_mode", -35, verbosity, 2);
+    print_test_item("fn validate_mode", verbosity);
 
     if (validate_mode(MODE_UNSET)  != ERR_PARAM ||
         validate_mode(MODE_VERIFY) != ERR_NO    ||
         validate_mode(MODE_SIGN)   != ERR_NO    ||
         validate_mode(0xffff)      != ERR_PARAM )
     {
-        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
+    print_test_result(1, verbosity);
 
     // TEST: fn sigil_init
-    v_print("    - fn sigil_init", -35, verbosity, 2);
+    print_test_item("fn sigil_init", verbosity);
 
     sigil_t *sgl = NULL;
     sigil_err_t err = sigil_init(&sgl);
     if (err != ERR_NO || sgl == NULL) {
-        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
+    print_test_result(1, verbosity);
 
     // TEST: fn sigil_setup_file
-    v_print("    - fn sigil_setup_file", -35, verbosity, 2);
+    print_test_item("fn sigil_setup_file", verbosity);
 
     err = sigil_setup_file(sgl, "test/uznavany_bez_razitka_bez_revinfo_27_2_2012_CMS.pdf");
     if (err != ERR_NO || sgl->filepath == NULL) {
-        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
+    print_test_result(1, verbosity);
 
     // TEST: fn sigil_setup_mode
-    v_print("    - fn sigil_setup_mode", -35, verbosity, 2);
+    print_test_item("fn sigil_setup_mode", verbosity);
 
     err = sigil_setup_mode(sgl, 0xffff);
     if (err != ERR_PARAM) {
-        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
     err = sigil_setup_mode(sgl, MODE_VERIFY);
     if (err != ERR_NO) {
-        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
+    print_test_result(1, verbosity);
 
     // TEST: fn process_header
-    v_print("    - fn process_header", -35, verbosity, 2);
+    print_test_item("fn process_header", verbosity);
 
     // prepare
     sgl->file = fopen(sgl->filepath, "r");
 
     if (sgl->file == NULL) {
-        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
@@ -217,19 +219,19 @@ int sigil_sigil_self_test(int verbosity)
     if (err != ERR_NO || sgl->pdf_x != 1 || sgl->pdf_y != 3 ||
         sgl->pdf_start_offset != 0)
     {
-        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
+    print_test_result(1, verbosity);
 
     sigil_free(sgl);
 
     // all tests done
-    v_print(COLOR_GREEN "   PASSED\n" COLOR_RESET, 0, verbosity, 1);
+    print_module_result(1, verbosity);
     return 0;
 
 failed:
-    v_print(COLOR_RED "   FAILED\n" COLOR_RESET, 0, verbosity, 1);
+    print_test_result(0, verbosity);
+    print_module_result(0, verbosity);
     return 1;
 }

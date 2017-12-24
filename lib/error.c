@@ -19,17 +19,17 @@ const char_t *sigil_err_string(sigil_err_t err)
         return "ERROR input/output";
 
     if (err & ERR_PDF_CONT)
-        return "ERROR doesn't understand PDF file content";
+        return "ERROR corrupted PDF file";
 
     return "ERROR unknown";
 }
 
 int sigil_error_self_test(int verbosity)
 {
-    v_print("\n + Testing module: error\n", 0, verbosity, 1);
+    print_module_name("error", verbosity);
 
     // TEST: error codes
-    v_print("    - error codes", -35, verbosity, 2);
+    print_test_item("error codes", verbosity);
 
     if ((ERR_NO    +    ERR_ALLOC     +    ERR_PARAM +
          ERR_IO    +    ERR_PDF_CONT  +    ERR_5     +
@@ -39,30 +39,29 @@ int sigil_error_self_test(int verbosity)
          ERR_15    +    ERR_16
         ) != 0xffff || ERR_NO != 0)
     {
-        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
+    print_test_result(1, verbosity);
 
     // TEST: fn sigil_err_string
-    v_print("    - fn sigil_err_string", -35, verbosity, 2);
+    print_test_item("fn sigil_err_string", verbosity);
 
     if (strcmp(sigil_err_string(ERR_NO   ), "NO ERROR"               ) != 0 ||
         strcmp(sigil_err_string(ERR_ALLOC), "ERROR during allocation") != 0 ||
         strcmp(sigil_err_string(0x800000 ), "ERROR unknown"          ) != 0 )
     {
-        v_print(COLOR_RED "FAILED\n" COLOR_RESET, 0, verbosity, 2);
         goto failed;
     }
 
-    v_print(COLOR_GREEN "OK\n" COLOR_RESET, 0, verbosity, 2);
+    print_test_result(1, verbosity);
 
     // all tests done
-    v_print(COLOR_GREEN "   PASSED\n" COLOR_RESET, 0, verbosity, 1);
+    print_module_result(1, verbosity);
     return 0;
 
 failed:
-    v_print(COLOR_RED "   FAILED\n" COLOR_RESET, 0, verbosity, 1);
+    print_test_result(0, verbosity);
+    print_module_result(0, verbosity);
     return 1;
 }
