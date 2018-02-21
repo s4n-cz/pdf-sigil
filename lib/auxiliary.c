@@ -4,9 +4,8 @@
 
 void sigil_zeroize(void *a, size_t bytes)
 {
-    if (a == NULL || bytes <= 0) {
+    if (a == NULL || bytes <= 0)
         return;
-    }
 
     volatile char *p = a;
 

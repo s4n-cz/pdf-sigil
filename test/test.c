@@ -5,6 +5,7 @@
 #include "error.h"
 #include "header.h"
 #include "sigil.h"
+#include "trailer.h"
 #include "xref.h"
 
 static void print_usage(const char *prog)
@@ -52,6 +53,8 @@ int main(int argc, char **argv)
     if (sigil_error_self_test(verbosity) != 0)
         failed++;
     if (sigil_header_self_test(verbosity) != 0)
+        failed++;
+    if (sigil_trailer_self_test(verbosity) != 0)
         failed++;
     if (sigil_xref_self_test(verbosity) != 0)
         failed++;

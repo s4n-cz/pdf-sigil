@@ -9,18 +9,16 @@ int sigil_config_self_test(int verbosity)
     // TEST: HEADER_SEARCH_OFFSET
     print_test_item("HEADER_SEARCH_OFFSET", verbosity);
 
-    if (HEADER_SEARCH_OFFSET < 0) {
+    if (HEADER_SEARCH_OFFSET < 0)
         goto failed;
-    }
 
     print_test_result(1, verbosity);
 
     // TEST: XREF_SEARCH_OFFSET
     print_test_item("XREF_SEARCH_OFFSET", verbosity);
 
-    if (XREF_SEARCH_OFFSET < 20) {
+    if (XREF_SEARCH_OFFSET < 20)
         goto failed;
-    }
 
     print_test_result(1, verbosity);
 

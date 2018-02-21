@@ -9,8 +9,12 @@
 sigil_err_t process_header(sigil_t *sgl)
 {
     // function parameter checks
-    if (sgl == NULL || sgl->file == NULL) {
+    if (sgl == NULL || sgl->file == NULL)
         return (sigil_err_t)ERR_PARAM;
+
+    if (ftell(sgl->file) != 0) {
+        if (fseek(sgl->file, 0, SEEK_SET) != 0 || ftell(sgl->file) != 0)
+            return (sigil_err_t)ERR_IO;
     }
 
     const char_t expected[] = {'%', 'P', 'D', 'F', '-'};
@@ -62,12 +66,13 @@ sigil_err_t process_header(sigil_t *sgl)
         }
     }
 
-    if (found != 8) {
+    if (found != 8)
         return (sigil_err_t)ERR_PDF_CONT;
-    }
 
     // offset counted with header -> subtract header size
     sgl->pdf_start_offset = offset - found;
+    if (sgl->pdf_start_offset > HEADER_SEARCH_OFFSET)
+        return (sigil_err_t)ERR_PDF_CONT;
 
     return (sigil_err_t)ERR_NO;
 }
@@ -90,14 +95,13 @@ int sigil_header_self_test(int verbosity)
     sgl->file = fmemopen(correct_1,
                          (strlen(correct_1) + 1) * sizeof(*correct_1),
                          "r");
-    if (sgl->file == NULL) {
+    if (sgl->file == NULL)
         goto failed;
-    }
 
     if (process_header(sgl) != ERR_NO ||
         sgl->pdf_x != 1               ||
         sgl->pdf_y != 1               ||
-        sgl->pdf_start_offset != 0     )
+        sgl->pdf_start_offset != 0)
     {
         goto failed;
     }
@@ -122,9 +126,8 @@ int sigil_header_self_test(int verbosity)
     sgl->file = fmemopen(correct_2,
                          (strlen(correct_2) + 1) * sizeof(*correct_2),
                          "r");
-    if (sgl->file == NULL) {
+    if (sgl->file == NULL)
         goto failed;
-    }
 
     if (process_header(sgl) != ERR_NO ||
         sgl->pdf_x != 1               ||
@@ -146,13 +149,11 @@ int sigil_header_self_test(int verbosity)
     sgl->file = fmemopen(wrong_1,
                          (strlen(wrong_1) + 1) * sizeof(*wrong_1),
                          "r");
-    if (sgl->file == NULL) {
+    if (sgl->file == NULL)
         goto failed;
-    }
 
-    if (process_header(sgl) == ERR_NO) {
+    if (process_header(sgl) == ERR_NO)
         goto failed;
-    }
 
     print_test_result(1, verbosity);
 
@@ -164,9 +165,8 @@ int sigil_header_self_test(int verbosity)
     return 0;
 
 failed:
-    if (sgl->file) {
+    if (sgl->file)
         fclose(sgl->file);
-    }
 
     print_test_result(0, verbosity);
     print_module_result(0, verbosity);

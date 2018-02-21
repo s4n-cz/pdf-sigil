@@ -15,7 +15,7 @@ sigil_err_t read_startxref(sigil_t *sgl)
         return (sigil_err_t)ERR_PARAM;
     }
 
-    // jump to end of file
+    // jump to the end of file
     if (fseek(sgl->file, 0, SEEK_END) != 0) {
         return (sigil_err_t)ERR_IO;
     }
@@ -71,9 +71,8 @@ sigil_err_t read_startxref(sigil_t *sgl)
 
     free(buf);
 
-    if (sgl->startxref == 0) {
+    if (sgl->startxref == 0)
         return (sigil_err_t)ERR_PDF_CONT;
-    }
 
     return (sigil_err_t)ERR_NO;
 }

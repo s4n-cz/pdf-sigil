@@ -1,14 +1,17 @@
 #ifndef PDF_SIGIL_SIGIL_H
 #define PDF_SIGIL_SIGIL_H
 
-#include <stdlib.h>
+#include <stdio.h>
 #include "error.h"
 
 #ifndef CHAR_T
 #define CHAR_T
-    typedef char char_t;
+typedef char char_t;
 #endif /* CHAR_T */
 
+#define XREF_TYPE_UNSET    0
+#define XREF_TYPE_TABLE    1
+#define XREF_TYPE_STREAM   2
 
 #define MODE_UNSET     0
 #define MODE_VERIFY    1
@@ -22,6 +25,7 @@ typedef struct {
     mode_t  mode;
     short   pdf_x,             /* numbers from PDF header */
             pdf_y;             /*   %PDF-<pdf_x>.<pdf_y>  */
+    short   xref_type;
     size_t  file_size;
     size_t  pdf_start_offset;  /* offset of %PDF-x.y      */
     size_t  startxref;
@@ -35,7 +39,7 @@ sigil_err_t sigil_setup_mode(sigil_t *sgl, mode_t mode);
 
 sigil_err_t sigil_process(sigil_t *sgl);
 
-// ... get functions
+// ... get functions TBD
 
 void sigil_free(sigil_t *sgl);
 

@@ -5,7 +5,7 @@
 
 #ifndef CHAR_T
 #define CHAR_T
-    typedef char char_t;
+typedef char char_t;
 #endif /* CHAR_T */
 
 
