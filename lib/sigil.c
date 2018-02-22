@@ -102,8 +102,8 @@ sigil_err_t sigil_process(sigil_t *sgl)
     if (err != ERR_NO)
         return err;
 
-    // process trailer
-    err = process_trailer(sgl);
+    // process cross-reference section
+    err = process_xref(sgl);
     if (err != ERR_NO)
         return err;
 
