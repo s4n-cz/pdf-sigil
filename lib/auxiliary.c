@@ -29,6 +29,49 @@ int is_whitespace(const char_t c)
             c == 0x20);  // space
 }
 
+int parse_number(FILE *in, size_t *number)
+{
+    char c;
+    int digits = 0;
+
+    *number = 0;
+
+    // skip leading whitespaces
+    while ((c = fgetc(in)) != EOF && is_whitespace(c))
+        ;
+
+    // number
+    do {
+        if (!is_digit(c)) {
+            if (ungetc(c, in) != c)
+                return 1;
+            return digits == 0;
+        }
+        *number = 10 * *number + c - '0';
+        digits++;
+    } while ((c = fgetc(in)) != EOF);
+
+    return 1;
+}
+
+int parse_free_indicator(FILE *in, char_t *result)
+{
+    char c;
+
+    // skip leading whitespaces
+    while ((c = fgetc(in)) != EOF && is_whitespace(c))
+        ;
+
+    switch(c) {
+        case 'f':
+        case 'n':
+            *result = c;
+            return 0;
+        default:
+            return 1;
+    }
+}
+
 void print_module_name(const char *module_name, int verbosity)
 {
     if (verbosity < 1)

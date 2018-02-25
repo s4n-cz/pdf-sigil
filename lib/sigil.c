@@ -34,6 +34,7 @@ sigil_err_t sigil_init(sigil_t **sgl)
     (*sgl)->pdf_x            = 0;
     (*sgl)->pdf_y            = 0;
     (*sgl)->xref_type        = XREF_TYPE_UNSET;
+    (*sgl)->xref             = NULL;
     (*sgl)->file_size        = 0;
     (*sgl)->pdf_start_offset = 0;
     (*sgl)->startxref        = 0;
@@ -115,12 +116,12 @@ sigil_err_t sigil_process(sigil_t *sgl)
 void sigil_free(sigil_t *sgl)
 {
     if (sgl) {
-        if (sgl->file) {
+        if (sgl->file)
             fclose(sgl->file);
-        }
-        if (sgl->filepath) {
+        if (sgl->filepath)
             free(sgl->filepath);
-        }
+        if (sgl->xref)
+            free_xref(sgl->xref);
         free(sgl);
         sgl = NULL;
     }

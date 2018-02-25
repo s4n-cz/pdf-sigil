@@ -26,6 +26,82 @@ static sigil_err_t determine_xref_type(sigil_t *sgl)
     return (sigil_err_t)ERR_NO;
 }
 
+static sigil_err_t
+add_xref_entry(xref_t *xref, size_t obj, size_t offset, size_t generation)
+{
+    int resize_factor = 1;
+
+    if (xref == NULL)
+        return (sigil_err_t)ERR_PARAM;
+
+    // resize if needed
+    while (obj > resize_factor * xref->capacity - 1)
+        resize_factor *= 2;
+    if (resize_factor != 1) {
+        xref->entry = realloc(xref->entry,sizeof(xref_entry_t *) * xref->capacity * resize_factor);
+        if (xref->entry == NULL)
+            return (sigil_err_t)ERR_ALLOC;
+        sigil_zeroize(xref->entry + xref->capacity, sizeof(xref_entry_t *) * (xref->capacity * (resize_factor - 1)));
+        xref->capacity *= resize_factor;
+    }
+
+    if (xref->entry[obj] != NULL) {
+        if (xref->entry[obj]->generation_num < generation) {
+            xref->entry[obj]->byte_offset = offset;
+            xref->entry[obj]->generation_num = generation;
+        } else {
+            return (sigil_err_t)ERR_NO;
+        }
+    } else {
+        xref->entry[obj] = malloc(sizeof(xref_entry_t));
+        if (xref->entry[obj] == NULL)
+            return (sigil_err_t)ERR_ALLOC;
+
+        xref->entry[obj]->byte_offset = offset;
+        xref->entry[obj]->generation_num = generation;
+    }
+
+    return (sigil_err_t)ERR_ALLOC;
+}
+
+static void free_xref_entry(xref_entry_t *entry)
+{
+    if (entry != NULL)
+        free(entry);
+}
+
+xref_t *new_xref()
+{
+    xref_t *xref = malloc(sizeof(xref_t));
+    if (xref == NULL)
+        return NULL;
+
+    xref->entry = malloc(sizeof(xref_entry_t *) * XREF_PREALLOCATION);
+    if (xref->entry == NULL) {
+        free(xref);
+        return NULL;
+    }
+    xref->capacity = XREF_PREALLOCATION;
+    sigil_zeroize(xref->entry, sizeof(xref_entry_t *) * xref->capacity);
+
+    return xref;
+}
+
+void free_xref(xref_t *xref)
+{
+    if (xref == NULL)
+        return;
+
+    if (xref->entry != NULL) {
+        for (int i = 0; i < xref->capacity; i++) {
+            free_xref_entry(xref->entry[i]);
+        }
+        free(xref->entry);
+    }
+
+    free(xref);
+}
+
 sigil_err_t read_startxref(sigil_t *sgl)
 {
     // function parameter checks
@@ -95,6 +171,65 @@ sigil_err_t read_startxref(sigil_t *sgl)
     return (sigil_err_t)ERR_NO;
 }
 
+sigil_err_t read_xref_table(sigil_t *sgl)
+{
+    char tmp[5],
+         free_indicator;
+    size_t section_start = 0,
+           section_cnt = 0,
+           obj_offset,
+           obj_generation;
+    int xref_end = 0;
+    sigil_err_t err;
+
+    if (sgl->xref == NULL)
+        sgl->xref = new_xref();
+    if (sgl->xref == NULL)
+        return (sigil_err_t)ERR_ALLOC;
+
+    if (fseek(sgl->file, sgl->startxref, SEEK_SET) != 0)
+        return (sigil_err_t)ERR_IO;
+
+    // read "xref"
+    if (fgets(tmp, 5, sgl->file) == NULL)
+        return (sigil_err_t)ERR_IO;
+
+    if (strncmp(tmp, "xref", 4) != 0)
+        return (sigil_err_t)ERR_PDF_CONT;
+
+    while (!xref_end) { // for all xref sections
+        while (1) {
+            // read 2 numbers:
+            //     - first object in subsection
+            //     - number of entries in subsection
+            if (parse_number(sgl->file, &section_start) != 0) {
+                xref_end = 1;
+                break;
+            }
+            if (parse_number(sgl->file, &section_cnt) != 0)
+                return 1;
+            if (section_start < 0 || section_cnt < 1)
+                return 1;
+
+            // for all entries in one section
+            for (int section_offset = 0; section_offset < section_cnt; section_offset++) {
+                if (parse_number(sgl->file, &obj_offset) != 0)
+                    return (sigil_err_t)ERR_PDF_CONT;
+                if (parse_number(sgl->file, &obj_generation) != 0)
+                    return (sigil_err_t)ERR_PDF_CONT;
+                if (parse_free_indicator(sgl->file, &free_indicator) != 0)
+                    return (sigil_err_t)ERR_PDF_CONT;
+                size_t obj_num = section_start + section_offset;
+                if (free_indicator == 'n') {
+                    err = add_xref_entry(sgl->xref, obj_num, obj_offset, obj_generation); if (err != ERR_NO)
+                        return err;
+                }
+            }
+        }
+    }
+    return (sigil_err_t)ERR_NO;
+}
+
 sigil_err_t process_xref(sigil_t *sgl)
 {
     sigil_err_t err;
@@ -112,10 +247,31 @@ sigil_err_t process_xref(sigil_t *sgl)
     if (err != ERR_NO)
         return err;
 
+    switch (sgl->xref_type) {
+        case XREF_TYPE_TABLE:
+            read_xref_table(sgl);
+            break;
+        case XREF_TYPE_STREAM:
+            return (sigil_err_t)ERR_NOT_IMPL; // TODO
+        default:
+            return (sigil_err_t)ERR_PDF_CONT;
+    }
+
     // TODO
 
     return 0;
+}
 
+void print_xref(xref_t *xref)
+{
+    if (xref == NULL)
+        return;
+
+    printf("\nXREF\n");
+    for (int i = 0; i < xref->capacity; i++) {
+        if (xref->entry[i] != NULL)
+            printf("obj %d | offset %zd | generation %zd\n", i, xref->entry[i]->byte_offset, xref->entry[i]->generation_num);
+    }
 }
 
 int sigil_xref_self_test(int verbosity)

@@ -6,8 +6,21 @@
 
 #ifndef CHAR_T
 #define CHAR_T
-typedef char char_t;
+    typedef char char_t;
 #endif /* CHAR_T */
+
+#ifndef XREF_T
+#define XREF_T
+    typedef struct {
+        size_t byte_offset;
+        size_t generation_num;
+    } xref_entry_t;
+
+    typedef struct {
+        xref_entry_t **entry;
+        size_t capacity;
+    } xref_t;
+#endif /* XREF_T */
 
 #define XREF_TYPE_UNSET    0
 #define XREF_TYPE_TABLE    1
@@ -18,6 +31,7 @@ typedef char char_t;
 #define MODE_SIGN      2
 
 typedef uint32_t mode_t;
+struct xref_t;
 
 typedef struct {
     FILE   *file;
@@ -26,6 +40,7 @@ typedef struct {
     short   pdf_x,             /* numbers from PDF header */
             pdf_y;             /*   %PDF-<pdf_x>.<pdf_y>  */
     short   xref_type;
+    xref_t *xref;
     size_t  file_size;
     size_t  pdf_start_offset;  /* offset of %PDF-x.y      */
     size_t  startxref;

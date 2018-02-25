@@ -1,11 +1,11 @@
 #ifndef PDF_SIGIL_AUXILIARY_H
 #define PDF_SIGIL_AUXILIARY_H
 
-#include <stdlib.h>
+#include <stdio.h>
 
 #ifndef CHAR_T
 #define CHAR_T
-typedef char char_t;
+    typedef char char_t;
 #endif /* CHAR_T */
 
 
@@ -20,8 +20,10 @@ typedef char char_t;
 void sigil_zeroize(void *a, size_t bytes);
 
 int is_digit(const char_t c);
-
 int is_whitespace(const char_t c);
+
+int parse_number(FILE *in, size_t *number);
+int parse_free_indicator(FILE *in, char_t *result);
 
 void print_module_name(const char *module_name, int verbosity);
 void print_module_result(int result, int verbosity);

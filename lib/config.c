@@ -22,6 +22,14 @@ int sigil_config_self_test(int verbosity)
 
     print_test_result(1, verbosity);
 
+    // TEST: XREF_PREALLOCATION
+    print_test_item("XREF_PREALLOCATION", verbosity);
+
+    if (XREF_PREALLOCATION < 1)
+        goto failed;
+
+    print_test_result(1, verbosity);
+
     // all tests done
     print_module_result(1, verbosity);
     return 0;

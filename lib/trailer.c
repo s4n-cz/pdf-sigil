@@ -19,7 +19,7 @@ sigil_err_t process_trailer(sigil_t *sgl)
 
 int sigil_trailer_self_test(int verbosity)
 {
-    print_module_name("xxx", verbosity);
+    print_module_name("trailer", verbosity);
 
     // TEST: fn determine_xref_type - STREAM
     print_test_item("xxx", verbosity);

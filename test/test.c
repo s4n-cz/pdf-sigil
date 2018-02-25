@@ -43,7 +43,7 @@ int main(int argc, char **argv)
     }
 
     if (verbosity >= 1)
-        printf("\n STARTING TEST PROCEDURE\n");
+        printf("\n ====== STARTING TEST PROCEDURE ======\n");
 
     // call self_test function for each module
     if (sigil_config_self_test(verbosity) != 0)

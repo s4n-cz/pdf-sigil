@@ -21,6 +21,9 @@ const char_t *sigil_err_string(sigil_err_t err)
     if (err & ERR_PDF_CONT)
         return "ERROR corrupted PDF file";
 
+    if (err & ERR_NOT_IMPL)
+        return "ERROR not implemented";
+
     return "ERROR unknown";
 }
 
@@ -31,11 +34,11 @@ int sigil_error_self_test(int verbosity)
     // TEST: error codes
     print_test_item("error codes", verbosity);
 
-    if ((ERR_NO    +    ERR_ALLOC     +    ERR_PARAM +
-         ERR_IO    +    ERR_PDF_CONT  +    ERR_5     +
-         ERR_6     +    ERR_7         +    ERR_8     +
-         ERR_9     +    ERR_10        +    ERR_11    +
-         ERR_12    +    ERR_13        +    ERR_14    +
+    if ((ERR_NO    +    ERR_ALLOC     +    ERR_PARAM    +
+         ERR_IO    +    ERR_PDF_CONT  +    ERR_NOT_IMPL +
+         ERR_6     +    ERR_7         +    ERR_8        +
+         ERR_9     +    ERR_10        +    ERR_11       +
+         ERR_12    +    ERR_13        +    ERR_14       +
          ERR_15    +    ERR_16
         ) != 0xffff || ERR_NO != 0)
     {

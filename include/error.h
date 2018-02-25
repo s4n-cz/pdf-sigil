@@ -5,7 +5,7 @@
 
 #ifndef CHAR_T
 #define CHAR_T
-typedef char char_t;
+    typedef char char_t;
 #endif /* CHAR_T */
 
 
@@ -14,7 +14,7 @@ typedef char char_t;
 #define ERR_PARAM        0x0002 // [_|_|_|x] 0000 0010
 #define ERR_IO           0x0004 // [_|_|_|x] 0000 0100
 #define ERR_PDF_CONT     0x0008 // [_|_|_|x] 0000 1000
-#define ERR_5            0x0010 // [_|_|_|x] 0001 0000
+#define ERR_NOT_IMPL     0x0010 // [_|_|_|x] 0001 0000
 #define ERR_6            0x0020 // [_|_|_|x] 0010 0000
 #define ERR_7            0x0040 // [_|_|_|x] 0100 0000
 #define ERR_8            0x0080 // [_|_|_|x] 1000 0000
