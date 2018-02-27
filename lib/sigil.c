@@ -22,7 +22,6 @@ sigil_err_t sigil_init(sigil_t **sgl)
 
     // set default values
     (*sgl)->file             = NULL;
-    (*sgl)->filepath         = NULL;
     (*sgl)->pdf_x            = 0;
     (*sgl)->pdf_y            = 0;
     (*sgl)->xref_type        = XREF_TYPE_UNSET;
@@ -34,40 +33,16 @@ sigil_err_t sigil_init(sigil_t **sgl)
     return (sigil_err_t)ERR_NO;
 }
 
-sigil_err_t sigil_setup_file(sigil_t *sgl, const char *filepath)
-{
-    // function parameter checks
-    if (sgl == NULL || filepath == NULL)
-        return (sigil_err_t)ERR_PARAM;
-
-    // get size of filepath
-    size_t filepath_len = strlen(filepath);
-    if (filepath_len <= 0)
-        return (sigil_err_t)ERR_PARAM;
-
-    // allocate space for copy of provided string
-    sgl->filepath = malloc((filepath_len + 1) * sizeof(char_t));
-    if (sgl->filepath == NULL)
-        return (sigil_err_t)ERR_ALLOC;
-
-    // copy string filepath into sigil_t structure
-    int written = snprintf(sgl->filepath, filepath_len + 1, filepath);
-    if (written < 0 || written >= filepath_len + 1)
-        return (sigil_err_t)ERR_IO;
-
-    return (sigil_err_t)ERR_NO;
-}
-
-sigil_err_t sigil_verify(sigil_t *sgl)
+sigil_err_t sigil_verify(sigil_t *sgl, const char *filepath)
 {
     sigil_err_t err;
 
     // function parameter checks
-    if (sgl == NULL || sgl->filepath == NULL)
+    if (sgl == NULL || filepath == NULL)
         return (sigil_err_t)ERR_PARAM;
 
     // open provided file
-    if ((sgl->file = fopen(sgl->filepath, "r")) == NULL)
+    if ((sgl->file = fopen(filepath, "r")) == NULL)
         return (sigil_err_t)ERR_IO;
 
     // process header - %PDF-<pdf_x>.<pdf_y>
@@ -91,16 +66,13 @@ sigil_err_t sigil_verify(sigil_t *sgl)
 
 void sigil_free(sigil_t *sgl)
 {
-    if (sgl) {
-        if (sgl->file)
-            fclose(sgl->file);
-        if (sgl->filepath)
-            free(sgl->filepath);
-        if (sgl->xref)
-            xref_free(sgl->xref);
-        free(sgl);
-        sgl = NULL;
-    }
+    if (sgl == NULL)
+        return;
+    if (sgl->file)
+        fclose(sgl->file);
+    if (sgl->xref)
+        xref_free(sgl->xref);
+    free(sgl);
 }
 
 int sigil_sigil_self_test(int verbosity)
@@ -117,24 +89,6 @@ int sigil_sigil_self_test(int verbosity)
         sgl = NULL;
         err = sigil_init(&sgl);
         if (err != ERR_NO || sgl == NULL)
-            goto failed;
-
-        sigil_free(sgl);
-    }
-
-    print_test_result(1, verbosity);
-
-    // TEST: fn sigil_setup_file
-    print_test_item("fn sigil_setup_file", verbosity);
-
-    {
-        sgl = NULL;
-        err = sigil_init(&sgl);
-        if (err != ERR_NO || sgl == NULL)
-            goto failed;
-
-        err = sigil_setup_file(sgl, "test/uznavany_bez_razitka_bez_revinfo_27_2_2012_CMS.pdf");
-        if (err != ERR_NO || sgl->filepath == NULL)
             goto failed;
 
         sigil_free(sgl);

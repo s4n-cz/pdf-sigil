@@ -32,7 +32,6 @@
 
 typedef struct {
     FILE   *file;
-    char   *filepath;
     short   pdf_x,             /* numbers from PDF header */
             pdf_y;             /*   %PDF-<pdf_x>.<pdf_y>  */
     short   xref_type;
@@ -44,9 +43,7 @@ typedef struct {
 
 sigil_err_t sigil_init(sigil_t **sgl);
 
-sigil_err_t sigil_setup_file(sigil_t *sgl, const char *filepath);
-
-sigil_err_t sigil_verify(sigil_t *sgl);
+sigil_err_t sigil_verify(sigil_t *sgl, const char *filepath);
 
 // ... get functions TODO
 
