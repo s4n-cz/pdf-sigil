@@ -1,28 +1,29 @@
 #ifndef PDF_SIGIL_XREF_H
 #define PDF_SIGIL_XREF_H
 
-#include "error.h"
 #include "sigil.h"
 
+#ifndef SIGIL_ERR_T
+#define SIGIL_ERR_T
+    typedef uint32_t sigil_err_t;
+#endif /* SIGIL_ERR_T */
 
 #ifndef XREF_T
 #define XREF_T
+    typedef struct {
+        size_t byte_offset;
+        size_t generation_num;
+    } xref_entry_t;
 
-typedef struct {
-    size_t byte_offset;
-    size_t generation_num;
-} xref_entry_t;
-
-typedef struct {
-    xref_entry_t **entry;
-    size_t capacity;
-} xref_t;
-
+    typedef struct {
+        xref_entry_t **entry;
+        size_t capacity;
+    } xref_t;
 #endif /* XREF_T */
 
-xref_t *new_xref();
+xref_t *xref_init();
 
-void free_xref(xref_t *xref);
+void xref_free(xref_t *xref);
 
 sigil_err_t read_startxref(sigil_t *sgl);
 

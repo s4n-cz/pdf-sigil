@@ -4,7 +4,7 @@
 #include "error.h"
 
 
-const char_t *sigil_err_string(sigil_err_t err)
+const char *sigil_err_string(sigil_err_t err)
 {
     if (err == ERR_NO)
         return "NO ERROR";

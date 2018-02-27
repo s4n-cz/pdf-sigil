@@ -1,7 +1,10 @@
 #ifndef PDF_SIGIL_TRAILER_H
 #define PDF_SIGIL_TRAILER_H
 
-#include "error.h"
+#ifndef SIGIL_ERR_T
+#define SIGIL_ERR_T
+    typedef uint32_t sigil_err_t;
+#endif /* SIGIL_ERR_T */
 
 
 sigil_err_t process_trailer(sigil_t *sgl);

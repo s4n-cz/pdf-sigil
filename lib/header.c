@@ -81,19 +81,18 @@ int sigil_header_self_test(int verbosity)
 {
     print_module_name("header", verbosity);
 
-    // prepare
     sigil_t *sgl = NULL;
 
     if (sigil_init(&sgl) != ERR_NO)
         goto failed;
 
     // TEST: correct_1
-    print_test_item("correct_1", verbosity);
+    print_test_item("fn process_header", verbosity);
 
-    char_t *correct_1 = "\x25PDF-1.1\n"             \
-                        "abcdefghijklmnopqrstuvwxyz";
-    sgl->file = fmemopen(correct_1,
-                         (strlen(correct_1) + 1) * sizeof(*correct_1),
+    char *sstream_1 = "\x25PDF-1.1\n"             \
+                      "abcdefghijklmnopqrstuvwxyz";
+    sgl->file = fmemopen(sstream_1,
+                         (strlen(sstream_1) + 1) * sizeof(*sstream_1),
                          "r");
     if (sgl->file == NULL)
         goto failed;
@@ -106,25 +105,20 @@ int sigil_header_self_test(int verbosity)
         goto failed;
     }
 
-    print_test_result(1, verbosity);
-
     fclose(sgl->file);
     sgl->file = NULL;
 
-    // TEST: correct_2
-    print_test_item("correct_2", verbosity);
-
-    char_t *correct_2 = "\x1a\x5e\x93\x7e\x6f\x3c\x6a\x71\xbf\xda\x54\x91\xe5" \
-                        "\x86\x08\x84\xaf\x8e\x89\x44\xab\xc4\x58\x0c\xb9\x31" \
-                        "\xd3\x8c\x0f\xc0\x43\x1a\xa5\x07\x4f\xe2\x98\xb3\xd8" \
-                        "\x53\x4b\x5d\x4b\xd6\x48\x26\x98\x09\xde\x0d"         \
-                        "\x25PDF-1.2"                                          \
-                        "\x55\xa1\x77\xd3\x47\xab\xc6\x87\xf3\xbc\x2d\x8a\x9f" \
-                        "\x0e\x47\xbb\x74\xd2\x71\x28\x94\x53\x92\xae\x2b\x17" \
-                        "\xd0\x6a\x9c\x13\x84\xc1\x07\x44\xc0\x81\xb8\xd6\x9c" \
-                        "\x31\x08\x13\xd4\xc2\xd6\x2d\xaf\xfb\xea\x6f";
-    sgl->file = fmemopen(correct_2,
-                         (strlen(correct_2) + 1) * sizeof(*correct_2),
+    char *sstream_2 = "\x1a\x5e\x93\x7e\x6f\x3c\x6a\x71\xbf\xda\x54\x91\xe5"\
+                      "\x86\x08\x84\xaf\x8e\x89\x44\xab\xc4\x58\x0c\xb9\x31"\
+                      "\xd3\x8c\x0f\xc0\x43\x1a\xa5\x07\x4f\xe2\x98\xb3\xd8"\
+                      "\x53\x4b\x5d\x4b\xd6\x48\x26\x98\x09\xde\x0d"        \
+                      "\x25PDF-1.2"                                         \
+                      "\x55\xa1\x77\xd3\x47\xab\xc6\x87\xf3\xbc\x2d\x8a\x9f"\
+                      "\x0e\x47\xbb\x74\xd2\x71\x28\x94\x53\x92\xae\x2b\x17"\
+                      "\xd0\x6a\x9c\x13\x84\xc1\x07\x44\xc0\x81\xb8\xd6\x9c"\
+                      "\x31\x08\x13\xd4\xc2\xd6\x2d\xaf\xfb\xea\x6f";
+    sgl->file = fmemopen(sstream_2,
+                         (strlen(sstream_2) + 1) * sizeof(*sstream_2),
                          "r");
     if (sgl->file == NULL)
         goto failed;
@@ -137,17 +131,12 @@ int sigil_header_self_test(int verbosity)
         goto failed;
     }
 
-    print_test_result(1, verbosity);
-
     fclose(sgl->file);
     sgl->file = NULL;
 
-    // TEST: wrong_1
-    print_test_item("wrong_1", verbosity);
-
-    char_t *wrong_1 = "\x25\x25PPD\x25PDF-\x25PDF-1\x25PDF-1..@PDF-1.3";
-    sgl->file = fmemopen(wrong_1,
-                         (strlen(wrong_1) + 1) * sizeof(*wrong_1),
+    char *sstream_3 = "\x25\x25PPD\x25PDF-\x25PDF-1\x25PDF-1..@PDF-1.3";
+    sgl->file = fmemopen(sstream_3,
+                         (strlen(sstream_3) + 1) * sizeof(*sstream_3),
                          "r");
     if (sgl->file == NULL)
         goto failed;
@@ -155,18 +144,17 @@ int sigil_header_self_test(int verbosity)
     if (process_header(sgl) == ERR_NO)
         goto failed;
 
-    print_test_result(1, verbosity);
+    sigil_free(sgl);
 
-    fclose(sgl->file);
-    sgl->file = NULL;
+    print_test_result(1, verbosity);
 
     // all tests done
     print_module_result(1, verbosity);
     return 0;
 
 failed:
-    if (sgl->file)
-        fclose(sgl->file);
+    if (sgl)
+        sigil_free(sgl);
 
     print_test_result(0, verbosity);
     print_module_result(0, verbosity);

@@ -2,19 +2,12 @@
 #include <stdio.h>
 #include <string.h>
 #include "auxiliary.h"
+#include "error.h"
 #include "header.h"
 #include "sigil.h"
 #include "trailer.h"
 #include "xref.h"
 
-
-static sigil_err_t validate_mode(mode_t mode)
-{
-    if (mode != MODE_VERIFY && mode != MODE_SIGN)
-        return (sigil_err_t)ERR_PARAM;
-
-    return (sigil_err_t)ERR_NO;
-}
 
 sigil_err_t sigil_init(sigil_t **sgl)
 {
@@ -30,7 +23,6 @@ sigil_err_t sigil_init(sigil_t **sgl)
     // set default values
     (*sgl)->file             = NULL;
     (*sgl)->filepath         = NULL;
-    (*sgl)->mode             = MODE_UNSET;
     (*sgl)->pdf_x            = 0;
     (*sgl)->pdf_y            = 0;
     (*sgl)->xref_type        = XREF_TYPE_UNSET;
@@ -42,7 +34,7 @@ sigil_err_t sigil_init(sigil_t **sgl)
     return (sigil_err_t)ERR_NO;
 }
 
-sigil_err_t sigil_setup_file(sigil_t *sgl, const char_t *filepath)
+sigil_err_t sigil_setup_file(sigil_t *sgl, const char *filepath)
 {
     // function parameter checks
     if (sgl == NULL || filepath == NULL)
@@ -66,36 +58,16 @@ sigil_err_t sigil_setup_file(sigil_t *sgl, const char_t *filepath)
     return (sigil_err_t)ERR_NO;
 }
 
-sigil_err_t sigil_setup_mode(sigil_t *sgl, mode_t mode)
-{
-    // function parameter checks
-    if (sgl == NULL || validate_mode(mode) != ERR_NO)
-        return (sigil_err_t)ERR_PARAM;
-
-    sgl->mode = mode;
-
-    return (sigil_err_t)ERR_NO;
-}
-
-sigil_err_t sigil_process(sigil_t *sgl)
+sigil_err_t sigil_verify(sigil_t *sgl)
 {
     sigil_err_t err;
 
     // function parameter checks
-    if (sgl == NULL || sgl->filepath == NULL ||
-        validate_mode(sgl->mode) != ERR_NO   )
-    {
+    if (sgl == NULL || sgl->filepath == NULL)
         return (sigil_err_t)ERR_PARAM;
-    }
 
     // open provided file
-    if (sgl->mode == MODE_VERIFY) {
-        sgl->file = fopen(sgl->filepath, "r");
-    } else if (sgl->mode == MODE_SIGN) {
-        sgl->file = fopen(sgl->filepath, "r+");
-    }
-
-    if (sgl->file == NULL)
+    if ((sgl->file = fopen(sgl->filepath, "r")) == NULL)
         return (sigil_err_t)ERR_IO;
 
     // process header - %PDF-<pdf_x>.<pdf_y>
@@ -105,6 +77,10 @@ sigil_err_t sigil_process(sigil_t *sgl)
 
     // process cross-reference section
     err = process_xref(sgl);
+    if (err != ERR_NO)
+        return err;
+
+    err = process_trailer(sgl);
     if (err != ERR_NO)
         return err;
 
@@ -121,7 +97,7 @@ void sigil_free(sigil_t *sgl)
         if (sgl->filepath)
             free(sgl->filepath);
         if (sgl->xref)
-            free_xref(sgl->xref);
+            xref_free(sgl->xref);
         free(sgl);
         sgl = NULL;
     }
@@ -129,78 +105,69 @@ void sigil_free(sigil_t *sgl)
 
 int sigil_sigil_self_test(int verbosity)
 {
+    sigil_err_t err;
+    sigil_t *sgl = NULL;
+
     print_module_name("sigil", verbosity);
-
-    // TEST: fn validate_mode
-    print_test_item("fn validate_mode", verbosity);
-
-    if (validate_mode(MODE_UNSET)  != ERR_PARAM ||
-        validate_mode(MODE_VERIFY) != ERR_NO    ||
-        validate_mode(MODE_SIGN)   != ERR_NO    ||
-        validate_mode(0xffff)      != ERR_PARAM )
-    {
-        goto failed;
-    }
-
-    print_test_result(1, verbosity);
 
     // TEST: fn sigil_init
     print_test_item("fn sigil_init", verbosity);
 
-    sigil_t *sgl = NULL;
-    sigil_err_t err = sigil_init(&sgl);
-    if (err != ERR_NO || sgl == NULL)
-        goto failed;
+    {
+        sgl = NULL;
+        err = sigil_init(&sgl);
+        if (err != ERR_NO || sgl == NULL)
+            goto failed;
+
+        sigil_free(sgl);
+    }
 
     print_test_result(1, verbosity);
 
     // TEST: fn sigil_setup_file
     print_test_item("fn sigil_setup_file", verbosity);
 
-    err = sigil_setup_file(sgl, "test/uznavany_bez_razitka_bez_revinfo_27_2_2012_CMS.pdf");
-    if (err != ERR_NO || sgl->filepath == NULL)
-        goto failed;
-
-    print_test_result(1, verbosity);
-
-    // TEST: fn sigil_setup_mode
-    print_test_item("fn sigil_setup_mode", verbosity);
-
-    err = sigil_setup_mode(sgl, 0xffff);
-    if (err != ERR_PARAM)
-        goto failed;
-
-    err = sigil_setup_mode(sgl, MODE_VERIFY);
-    if (err != ERR_NO)
-        goto failed;
-
-    print_test_result(1, verbosity);
-
-    // TEST: fn process_header
-    print_test_item("fn process_header", verbosity);
-
-    // prepare
-    sgl->file = fopen(sgl->filepath, "r");
-
-    if (sgl->file == NULL)
-        goto failed;
-
-    err = process_header(sgl);
-    if (err != ERR_NO || sgl->pdf_x != 1 || sgl->pdf_y != 3 ||
-        sgl->pdf_start_offset != 0)
     {
-        goto failed;
+        sgl = NULL;
+        err = sigil_init(&sgl);
+        if (err != ERR_NO || sgl == NULL)
+            goto failed;
+
+        err = sigil_setup_file(sgl, "test/uznavany_bez_razitka_bez_revinfo_27_2_2012_CMS.pdf");
+        if (err != ERR_NO || sgl->filepath == NULL)
+            goto failed;
+
+        sigil_free(sgl);
     }
 
     print_test_result(1, verbosity);
 
-    sigil_free(sgl);
+    // TEST: fn sigil_verify
+    print_test_item("fn sigil_verify", verbosity);
+
+    {
+        sgl = NULL;
+        err = sigil_init(&sgl);
+        if (err != ERR_NO || sgl == NULL)
+            goto failed;
+
+        // TODO
+        if (1)
+            goto failed;
+
+        sigil_free(sgl);
+    }
+
+    print_test_result(1, verbosity);
 
     // all tests done
     print_module_result(1, verbosity);
     return 0;
 
 failed:
+    if (sgl)
+        sigil_free(sgl);
+
     print_test_result(0, verbosity);
     print_module_result(0, verbosity);
     return 1;

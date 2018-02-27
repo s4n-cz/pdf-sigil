@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "auxiliary.h"
+#include "error.h"
 
 void sigil_zeroize(void *a, size_t bytes)
 {
@@ -29,46 +31,113 @@ int is_whitespace(const char_t c)
             c == 0x20);  // space
 }
 
-int parse_number(FILE *in, size_t *number)
+sigil_err_t skip_leading_whitespaces(FILE *in)
 {
-    char c;
+    char_t c;
+
+    while ((c = fgetc(in)) != EOF && is_whitespace(c))
+        ;
+
+    if (c == EOF)
+        return (sigil_err_t)ERR_PDF_CONT;
+
+    if (ungetc(c, in) != c)
+        return (sigil_err_t)ERR_IO;
+
+    return (sigil_err_t)ERR_NO;
+}
+
+sigil_err_t parse_number(FILE *in, size_t *number)
+{
+    char_t c;
     int digits = 0;
+    sigil_err_t err;
 
     *number = 0;
 
-    // skip leading whitespaces
-    while ((c = fgetc(in)) != EOF && is_whitespace(c))
-        ;
+    err = skip_leading_whitespaces(in);
+    if (err != ERR_NO)
+        return err;
 
     // number
-    do {
+    while ((c = fgetc(in)) != EOF) {
         if (!is_digit(c)) {
             if (ungetc(c, in) != c)
-                return 1;
-            return digits == 0;
+                return (sigil_err_t)ERR_IO;
+            if (digits > 0) {
+                return (sigil_err_t)ERR_NO;
+            } else {
+                return (sigil_err_t)ERR_PDF_CONT;
+            }
         }
         *number = 10 * *number + c - '0';
         digits++;
-    } while ((c = fgetc(in)) != EOF);
+    }
 
-    return 1;
+    return (sigil_err_t)ERR_PDF_CONT;
 }
 
-int parse_free_indicator(FILE *in, char_t *result)
+sigil_err_t parse_keyword(FILE *in, keyword_t *keyword)
 {
+    sigil_err_t err;
+    int count = 0;
+    const int keyword_max = 10;
+    char tmp[keyword_max],
+         c;
+
+    sigil_zeroize(tmp, keyword_max * sizeof(*tmp));
+
+    err = skip_leading_whitespaces(in);
+    if (err != ERR_NO)
+        return err;
+
+    while ((c = fgetc(in)) != EOF) {
+        if (is_whitespace(c)) {
+            if (count <= 0)
+                return (sigil_err_t)ERR_PDF_CONT;
+            if (ungetc(c, in) != c)
+                return (sigil_err_t)ERR_IO;
+
+            if (strncmp(tmp, "xref", 4) == 0) {
+                *keyword = KEYWORD_xref;
+                return (sigil_err_t)ERR_NO;
+            }
+            if (strncmp(tmp, "trailer", 7) == 0) {
+                *keyword = KEYWORD_trailer;
+                return (sigil_err_t)ERR_NO;
+            }
+            return (sigil_err_t)ERR_PDF_CONT;
+        } else {
+            if (count >= keyword_max - 1)
+                return (sigil_err_t)ERR_PDF_CONT;
+            tmp[count] = c;
+            count++;
+        }
+    }
+
+    return (sigil_err_t)ERR_PDF_CONT;
+}
+
+sigil_err_t parse_free_indicator(FILE *in, free_indicator_t *result)
+{
+    sigil_err_t err;
     char c;
 
-    // skip leading whitespaces
-    while ((c = fgetc(in)) != EOF && is_whitespace(c))
-        ;
+    err = skip_leading_whitespaces(in);
+    if (err != ERR_NO)
+        return err;
+
+    c = fgetc(in);
 
     switch(c) {
         case 'f':
+            *result = FREE_ENTRY;
+            return (sigil_err_t)ERR_NO;
         case 'n':
-            *result = c;
-            return 0;
+            *result = IN_USE_ENTRY;
+            return (sigil_err_t)ERR_NO;
         default:
-            return 1;
+            return (sigil_err_t)ERR_PDF_CONT;
     }
 }
 
@@ -97,7 +166,7 @@ void print_test_item(const char *test_name, int verbosity)
     if (verbosity < 2)
         return;
 
-    printf("    - %-30s", test_name);
+    printf("    - %-32s", test_name);
 }
 
 void print_test_result(int result, int verbosity)
@@ -173,6 +242,138 @@ int sigil_auxiliary_self_test(int verbosity)
         !is_whitespace(0x20) || is_whitespace('_' ) )
     {
         goto failed;
+    }
+
+    print_test_result(1, verbosity);
+
+    // TEST: fn skip_leading_whitespaces
+    print_test_item("fn skip_leading_whitespaces", verbosity);
+
+    {
+        char *sstream_1 = "x";
+        char *sstream_2 = "\x00\x09\x0a\x0c\x0d\x20x";
+        FILE *file;
+
+        file = fmemopen(sstream_1,
+                        (strlen(sstream_1) + 1) * sizeof(*sstream_1),
+                        "r");
+        if (file == NULL)
+            goto failed;
+
+        if (skip_leading_whitespaces(file) != ERR_NO ||
+            fgetc(file) != 'x')
+        {
+            goto failed;
+        }
+
+        fclose(file);
+
+        file = fmemopen(sstream_2,
+                        (7 + 1) * sizeof(*sstream_2), // cannot use strlen
+                        "r");
+        if (file == NULL)
+            goto failed;
+
+        if (skip_leading_whitespaces(file) != ERR_NO ||
+            fgetc(file) != 'x')
+        {
+            goto failed;
+        }
+
+        fclose(file);
+    }
+
+    print_test_result(1, verbosity);
+
+    // TEST: fn parse_number
+    print_test_item("fn parse_number", verbosity);
+
+    {
+        char *sstream = "0123456789    42";
+        size_t result = 0;
+        FILE *file;
+
+        file = fmemopen(sstream,
+                        (strlen(sstream) + 1) * sizeof(*sstream),
+                        "r");
+        if (file == NULL)
+            goto failed;
+
+        if (parse_number(file, &result) != ERR_NO ||
+            result != 123456789)
+        {
+            goto failed;
+        }
+
+        if (parse_number(file, &result) != ERR_NO ||
+            result != 42)
+        {
+            goto failed;
+        }
+
+        fclose(file);
+    }
+
+    print_test_result(1, verbosity);
+
+    // TEST: fn parse_keyword
+    print_test_item("fn parse_keyword", verbosity);
+
+    {
+        char *sstream = " xref \n trailer";
+        keyword_t result;
+        FILE *file;
+
+        file = fmemopen(sstream,
+                        (strlen(sstream) + 1) * sizeof(*sstream),
+                        "r");
+        if (file == NULL)
+            goto failed;
+
+        if (parse_keyword(file, &result) != ERR_NO ||
+            result != KEYWORD_xref)
+        {
+            goto failed;
+        }
+
+        if (parse_keyword(file, &result) != ERR_NO ||
+            result != KEYWORD_trailer)
+        {
+            goto failed;
+        }
+
+        fclose(file);
+    }
+
+    print_test_result(1, verbosity);
+
+    // TEST: fn parse_free_indicator
+    print_test_item("fn parse_free_indicator", verbosity);
+
+    {
+        char *sstream = " f n";
+        free_indicator_t result;
+        FILE *file;
+
+        file = fmemopen(sstream,
+                        (strlen(sstream) + 1) * sizeof(*sstream),
+                        "r");
+        if (file == NULL)
+            goto failed;
+
+        if (parse_free_indicator(file, &result) != ERR_NO ||
+            result != FREE_ENTRY)
+        {
+            goto failed;
+        }
+
+        if (parse_free_indicator(file, &result) != ERR_NO ||
+            result != IN_USE_ENTRY)
+        {
+            goto failed;
+        }
+
+        fclose(file);
     }
 
     print_test_result(1, verbosity);

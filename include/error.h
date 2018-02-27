@@ -5,9 +5,13 @@
 
 #ifndef CHAR_T
 #define CHAR_T
-    typedef char char_t;
+    typedef unsigned char char_t;
 #endif /* CHAR_T */
 
+#ifndef SIGIL_ERR_T
+#define SIGIL_ERR_T
+    typedef uint32_t sigil_err_t;
+#endif /* SIGIL_ERR_T */
 
 #define ERR_NO           0x0000 // [_|_|_|x] 0000 0000
 #define ERR_ALLOC        0x0001 // [_|_|_|x] 0000 0001
@@ -27,9 +31,7 @@
 #define ERR_15           0x4000 // [_|_|x|_] 0100 0000
 #define ERR_16           0x8000 // [_|_|x|_] 1000 0000
 
-typedef uint32_t sigil_err_t;
-
-const char_t *sigil_err_string(sigil_err_t err);
+const char *sigil_err_string(sigil_err_t err);
 
 int sigil_error_self_test(int verbosity);
 

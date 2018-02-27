@@ -14,7 +14,7 @@ static sigil_err_t determine_xref_type(sigil_t *sgl)
     if (fseek(sgl->file, sgl->startxref, SEEK_SET) != 0)
         return (sigil_err_t)ERR_IO;
 
-    char c = fgetc(sgl->file);
+    char_t c = fgetc(sgl->file);
     if (c == 'x') {
         sgl->xref_type = XREF_TYPE_TABLE;
     } else if (is_digit(c)) {
@@ -70,7 +70,7 @@ static void free_xref_entry(xref_entry_t *entry)
         free(entry);
 }
 
-xref_t *new_xref()
+xref_t *xref_init()
 {
     xref_t *xref = malloc(sizeof(xref_t));
     if (xref == NULL)
@@ -87,7 +87,7 @@ xref_t *new_xref()
     return xref;
 }
 
-void free_xref(xref_t *xref)
+void xref_free(xref_t *xref)
 {
     if (xref == NULL)
         return;
@@ -173,8 +173,8 @@ sigil_err_t read_startxref(sigil_t *sgl)
 
 sigil_err_t read_xref_table(sigil_t *sgl)
 {
-    char tmp[5],
-         free_indicator;
+    char tmp[5];
+    free_indicator_t free_indicator;
     size_t section_start = 0,
            section_cnt = 0,
            obj_offset,
@@ -183,7 +183,7 @@ sigil_err_t read_xref_table(sigil_t *sgl)
     sigil_err_t err;
 
     if (sgl->xref == NULL)
-        sgl->xref = new_xref();
+        sgl->xref = xref_init();
     if (sgl->xref == NULL)
         return (sigil_err_t)ERR_ALLOC;
 
@@ -202,25 +202,28 @@ sigil_err_t read_xref_table(sigil_t *sgl)
             // read 2 numbers:
             //     - first object in subsection
             //     - number of entries in subsection
-            if (parse_number(sgl->file, &section_start) != 0) {
+            if (parse_number(sgl->file, &section_start) != ERR_NO) {
                 xref_end = 1;
                 break;
             }
-            if (parse_number(sgl->file, &section_cnt) != 0)
+            if (parse_number(sgl->file, &section_cnt) != ERR_NO)
                 return 1;
             if (section_start < 0 || section_cnt < 1)
                 return 1;
 
             // for all entries in one section
             for (int section_offset = 0; section_offset < section_cnt; section_offset++) {
-                if (parse_number(sgl->file, &obj_offset) != 0)
-                    return (sigil_err_t)ERR_PDF_CONT;
-                if (parse_number(sgl->file, &obj_generation) != 0)
-                    return (sigil_err_t)ERR_PDF_CONT;
-                if (parse_free_indicator(sgl->file, &free_indicator) != 0)
-                    return (sigil_err_t)ERR_PDF_CONT;
+                err = parse_number(sgl->file, &obj_offset);
+                if (err != ERR_NO)
+                    return err;
+                err = parse_number(sgl->file, &obj_generation);
+                if (err != ERR_NO)
+                    return err;
+                err = parse_free_indicator(sgl->file, &free_indicator);
+                if (err != ERR_NO)
+                    return err;
                 size_t obj_num = section_start + section_offset;
-                if (free_indicator == 'n') {
+                if (free_indicator == IN_USE_ENTRY) {
                     err = add_xref_entry(sgl->xref, obj_num, obj_offset, obj_generation); if (err != ERR_NO)
                         return err;
                 }
@@ -257,9 +260,7 @@ sigil_err_t process_xref(sigil_t *sgl)
             return (sigil_err_t)ERR_PDF_CONT;
     }
 
-    // TODO
-
-    return 0;
+    return (sigil_err_t)ERR_NO;
 }
 
 void print_xref(xref_t *xref)
@@ -276,22 +277,69 @@ void print_xref(xref_t *xref)
 
 int sigil_xref_self_test(int verbosity)
 {
-    print_module_name("xref", verbosity);
-
-    // prepare
+    sigil_err_t err;
     sigil_t *sgl = NULL;
 
-    if (sigil_init(&sgl) != ERR_NO) {
-        verbosity = MIN(verbosity, 1); // do not print test result "FAILED"
-        goto failed;
+    print_module_name("xref", verbosity);
+
+    // TEST: fn determine_xref_type - TABLE
+    print_test_item("fn determine_xref_type TABLE", verbosity);
+
+    {
+        sgl = NULL;
+        err = sigil_init(&sgl);
+        if (err != ERR_NO || sgl == NULL)
+            goto failed;
+
+        sgl->file = fopen("test/uznavany_bez_razitka_bez_revinfo_27_2_2012_CMS.pdf", "r");
+        if (sgl->file == NULL)
+            goto failed;
+        sgl->xref_type = XREF_TYPE_UNSET;
+        sgl->startxref = 67954;
+
+        if (determine_xref_type(sgl) != ERR_NO ||
+            sgl->xref_type != XREF_TYPE_TABLE)
+        {
+            goto failed;
+        }
+
+        sigil_free(sgl);
     }
+
+    print_test_result(1, verbosity);
+
+    // TEST: fn determine_xref_type - STREAM
+    print_test_item("fn determine_xref_type STREAM", verbosity);
+
+    {
+        sgl = NULL;
+        err = sigil_init(&sgl);
+        if (err != ERR_NO || sgl == NULL)
+            goto failed;
+
+        sgl->file = fopen("test/SampleSignedPDFDocument.pdf", "r");
+        if (sgl->file == NULL)
+            goto failed;
+        sgl->xref_type = XREF_TYPE_UNSET;
+        sgl->startxref = 116;
+
+        if (determine_xref_type(sgl) != ERR_NO ||
+            sgl->xref_type != XREF_TYPE_STREAM)
+        {
+            goto failed;
+        }
+
+        sigil_free(sgl);
+    }
+
+    print_test_result(1, verbosity);
 
     // TEST: fn read_startxref
     print_test_item("fn read_startxref", verbosity);
 
-    char_t *correct_1 = "startxref\n"                                            \
-                        "1234567890\n"                                           \
-                        "\045\045EOF"; // %%EOF
+    char *correct_1 = "startxref\n"                                            \
+                      "1234567890\n"                                           \
+                      "\045\045EOF"; // %%EOF
     sgl->file = fmemopen(correct_1,
                          (strlen(correct_1) + 1) * sizeof(*correct_1),
                          "r");
@@ -309,45 +357,6 @@ int sigil_xref_self_test(int verbosity)
     print_test_result(1, verbosity);
 
     fclose(sgl->file);
-
-    // TEST: fn determine_xref_type - TABLE
-    print_test_item("fn determine_xref_type 1", verbosity);
-
-    sgl->file = fopen("test/uznavany_bez_razitka_bez_revinfo_27_2_2012_CMS.pdf", "r");
-    if (sgl->file == NULL)
-        return (sigil_err_t)ERR_IO;
-    sgl->xref_type = XREF_TYPE_UNSET;
-    sgl->startxref = 67954;
-
-    if (determine_xref_type(sgl) != ERR_NO ||
-        sgl->xref_type != XREF_TYPE_TABLE)
-    {
-        goto failed;
-    }
-
-    print_test_result(1, verbosity);
-
-    fclose(sgl->file);
-
-    // TEST: fn determine_xref_type - STREAM
-    print_test_item("fn determine_xref_type 2", verbosity);
-
-    sgl->file = fopen("test/SampleSignedPDFDocument.pdf", "r");
-    if (sgl->file == NULL)
-        return (sigil_err_t)ERR_IO;
-    sgl->xref_type = XREF_TYPE_UNSET;
-    sgl->startxref = 116;
-
-    if (determine_xref_type(sgl) != ERR_NO ||
-        sgl->xref_type != XREF_TYPE_STREAM)
-    {
-        goto failed;
-    }
-
-    print_test_result(1, verbosity);
-
-    fclose(sgl->file);
-    free(sgl);
 
     // all tests done
     print_module_result(1, verbosity);
