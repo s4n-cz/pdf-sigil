@@ -81,8 +81,10 @@ xref_t *xref_init()
         free(xref);
         return NULL;
     }
-    xref->capacity = XREF_PREALLOCATION;
     sigil_zeroize(xref->entry, sizeof(xref_entry_t *) * xref->capacity);
+    xref->capacity = XREF_PREALLOCATION;
+    xref->size_from_trailer = 0;
+    xref->prev_section = 0;
 
     return xref;
 }

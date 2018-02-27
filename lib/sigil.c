@@ -21,14 +21,16 @@ sigil_err_t sigil_init(sigil_t **sgl)
         return (sigil_err_t)ERR_ALLOC;
 
     // set default values
-    (*sgl)->file             = NULL;
-    (*sgl)->pdf_x            = 0;
-    (*sgl)->pdf_y            = 0;
-    (*sgl)->xref_type        = XREF_TYPE_UNSET;
-    (*sgl)->xref             = NULL;
-    (*sgl)->file_size        = 0;
-    (*sgl)->pdf_start_offset = 0;
-    (*sgl)->startxref        = 0;
+    (*sgl)->file                            = NULL;
+    (*sgl)->pdf_x                           = 0;
+    (*sgl)->pdf_y                           = 0;
+    (*sgl)->xref_type                       = XREF_TYPE_UNSET;
+    (*sgl)->xref                            = NULL;
+    (*sgl)->ref_catalog_dict.object_num     = 0;
+    (*sgl)->ref_catalog_dict.generation_num = 0;
+    (*sgl)->file_size                       = 0;
+    (*sgl)->pdf_start_offset                = 0;
+    (*sgl)->startxref                       = 0;
 
     return (sigil_err_t)ERR_NO;
 }

@@ -18,6 +18,8 @@
     typedef struct {
         xref_entry_t **entry;
         size_t capacity;
+        size_t size_from_trailer;
+        size_t prev_section;
     } xref_t;
 #endif /* XREF_T */
 

@@ -23,22 +23,33 @@
     typedef struct {
         xref_entry_t **entry;
         size_t capacity;
+        size_t size_from_trailer;
+        size_t prev_section;
     } xref_t;
 #endif /* XREF_T */
+
+#ifndef REREFENCE_T
+#define REREFENCE_T
+    typedef struct {
+        size_t object_num;
+        size_t generation_num;
+    } reference_t;
+#endif /* REREFENCE_T */
 
 #define XREF_TYPE_UNSET    0
 #define XREF_TYPE_TABLE    1
 #define XREF_TYPE_STREAM   2
 
 typedef struct {
-    FILE   *file;
-    short   pdf_x,             /* numbers from PDF header */
-            pdf_y;             /*   %PDF-<pdf_x>.<pdf_y>  */
-    short   xref_type;
-    xref_t *xref;
-    size_t  file_size;
-    size_t  pdf_start_offset;  /* offset of %PDF-x.y      */
-    size_t  startxref;
+    FILE       *file;
+    short       pdf_x,             /* numbers from PDF header */
+                pdf_y;             /*   %PDF-<pdf_x>.<pdf_y>  */
+    short       xref_type;
+    xref_t     *xref;
+    reference_t ref_catalog_dict;
+    size_t      file_size;
+    size_t      pdf_start_offset;  /* offset of %PDF-x.y      */
+    size_t      startxref;
 } sigil_t;
 
 sigil_err_t sigil_init(sigil_t **sgl);
