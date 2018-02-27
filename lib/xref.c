@@ -12,7 +12,7 @@
 static sigil_err_t determine_xref_type(sigil_t *sgl)
 {
     if (fseek(sgl->file, sgl->startxref, SEEK_SET) != 0)
-        return (sigil_err_t)ERR_IO;
+        return ERR_IO;
 
     char_t c = fgetc(sgl->file);
     if (c == 'x') {
@@ -20,10 +20,10 @@ static sigil_err_t determine_xref_type(sigil_t *sgl)
     } else if (is_digit(c)) {
         sgl->xref_type = XREF_TYPE_STREAM;
     } else {
-        return (sigil_err_t)ERR_PDF_CONT;
+        return ERR_PDF_CONT;
     }
 
-    return (sigil_err_t)ERR_NO;
+    return ERR_NO;
 }
 
 static sigil_err_t
@@ -32,7 +32,7 @@ add_xref_entry(xref_t *xref, size_t obj, size_t offset, size_t generation)
     int resize_factor = 1;
 
     if (xref == NULL)
-        return (sigil_err_t)ERR_PARAM;
+        return ERR_PARAM;
 
     // resize if needed
     while (obj > resize_factor * xref->capacity - 1)
@@ -40,7 +40,7 @@ add_xref_entry(xref_t *xref, size_t obj, size_t offset, size_t generation)
     if (resize_factor != 1) {
         xref->entry = realloc(xref->entry,sizeof(xref_entry_t *) * xref->capacity * resize_factor);
         if (xref->entry == NULL)
-            return (sigil_err_t)ERR_ALLOC;
+            return ERR_ALLOC;
         sigil_zeroize(xref->entry + xref->capacity, sizeof(xref_entry_t *) * (xref->capacity * (resize_factor - 1)));
         xref->capacity *= resize_factor;
     }
@@ -50,18 +50,18 @@ add_xref_entry(xref_t *xref, size_t obj, size_t offset, size_t generation)
             xref->entry[obj]->byte_offset = offset;
             xref->entry[obj]->generation_num = generation;
         } else {
-            return (sigil_err_t)ERR_NO;
+            return ERR_NO;
         }
     } else {
         xref->entry[obj] = malloc(sizeof(xref_entry_t));
         if (xref->entry[obj] == NULL)
-            return (sigil_err_t)ERR_ALLOC;
+            return ERR_ALLOC;
 
         xref->entry[obj]->byte_offset = offset;
         xref->entry[obj]->generation_num = generation;
     }
 
-    return (sigil_err_t)ERR_ALLOC;
+    return ERR_ALLOC;
 }
 
 static void free_xref_entry(xref_entry_t *entry)
@@ -108,40 +108,40 @@ sigil_err_t read_startxref(sigil_t *sgl)
 {
     // function parameter checks
     if (sgl == NULL || sgl->file == NULL) {
-        return (sigil_err_t)ERR_PARAM;
+        return ERR_PARAM;
     }
 
     // jump to the end of file
     if (fseek(sgl->file, 0, SEEK_END) != 0) {
-        return (sigil_err_t)ERR_IO;
+        return ERR_IO;
     }
 
     // get file size
     if (sgl->file_size <= 0) {
         sgl->file_size = ftell(sgl->file);
         if (sgl->file_size < 0) {
-            return (sigil_err_t)ERR_IO;
+            return ERR_IO;
         }
     }
 
     // jump max XREF_SEARCH_OFFSET bytes from end
     size_t jump_pos = MAX(0, (ssize_t)sgl->file_size - XREF_SEARCH_OFFSET);
     if (fseek(sgl->file, jump_pos, SEEK_SET) != 0) {
-        return (sigil_err_t)ERR_IO;
+        return ERR_IO;
     }
 
     // prepare buffer for data
     size_t buf_len = sgl->file_size - jump_pos + 1;
     char_t *buf = malloc(buf_len * sizeof(char_t));
     if (buf == NULL) {
-        return (sigil_err_t)ERR_ALLOC;
+        return ERR_ALLOC;
     }
 
     // copy data from the end of file
     size_t read = fread(buf, sizeof(*buf), buf_len - 1, sgl->file);
     if (read <= 0) {
         free(buf);
-        return (sigil_err_t)ERR_IO;
+        return ERR_IO;
     }
     buf[read] = '\0';
 
@@ -154,7 +154,7 @@ sigil_err_t read_startxref(sigil_t *sgl)
             }
             if (!is_digit(buf[i])) {
                 free(buf);
-                return (sigil_err_t)ERR_PDF_CONT;
+                return ERR_PDF_CONT;
             }
             sgl->startxref = 0;
             while (i < read && is_digit(buf[i])) {
@@ -168,9 +168,9 @@ sigil_err_t read_startxref(sigil_t *sgl)
     free(buf);
 
     if (sgl->startxref == 0)
-        return (sigil_err_t)ERR_PDF_CONT;
+        return ERR_PDF_CONT;
 
-    return (sigil_err_t)ERR_NO;
+    return ERR_NO;
 }
 
 sigil_err_t read_xref_table(sigil_t *sgl)
@@ -187,17 +187,17 @@ sigil_err_t read_xref_table(sigil_t *sgl)
     if (sgl->xref == NULL)
         sgl->xref = xref_init();
     if (sgl->xref == NULL)
-        return (sigil_err_t)ERR_ALLOC;
+        return ERR_ALLOC;
 
     if (fseek(sgl->file, sgl->startxref, SEEK_SET) != 0)
-        return (sigil_err_t)ERR_IO;
+        return ERR_IO;
 
     // read "xref"
     if (fgets(tmp, 5, sgl->file) == NULL)
-        return (sigil_err_t)ERR_IO;
+        return ERR_IO;
 
     if (strncmp(tmp, "xref", 4) != 0)
-        return (sigil_err_t)ERR_PDF_CONT;
+        return ERR_PDF_CONT;
 
     while (!xref_end) { // for all xref sections
         while (1) {
@@ -232,7 +232,7 @@ sigil_err_t read_xref_table(sigil_t *sgl)
             }
         }
     }
-    return (sigil_err_t)ERR_NO;
+    return ERR_NO;
 }
 
 sigil_err_t process_xref(sigil_t *sgl)
@@ -241,7 +241,7 @@ sigil_err_t process_xref(sigil_t *sgl)
 
     // function parameter checks
     if (sgl == NULL || sgl->file == NULL || sgl->startxref == 0) {
-        return (sigil_err_t)ERR_PARAM;
+        return ERR_PARAM;
     }
 
     err = read_startxref(sgl);
@@ -257,12 +257,12 @@ sigil_err_t process_xref(sigil_t *sgl)
             read_xref_table(sgl);
             break;
         case XREF_TYPE_STREAM:
-            return (sigil_err_t)ERR_NOT_IMPL; // TODO
+            return ERR_NOT_IMPL; // TODO
         default:
-            return (sigil_err_t)ERR_PDF_CONT;
+            return ERR_PDF_CONT;
     }
 
-    return (sigil_err_t)ERR_NO;
+    return ERR_NO;
 }
 
 void print_xref(xref_t *xref)

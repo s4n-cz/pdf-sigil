@@ -39,12 +39,12 @@ sigil_err_t skip_leading_whitespaces(FILE *in)
         ;
 
     if (c == EOF)
-        return (sigil_err_t)ERR_PDF_CONT;
+        return ERR_PDF_CONT;
 
     if (ungetc(c, in) != c)
-        return (sigil_err_t)ERR_IO;
+        return ERR_IO;
 
-    return (sigil_err_t)ERR_NO;
+    return ERR_NO;
 }
 
 sigil_err_t skip_dictionary(FILE *in)
@@ -60,20 +60,20 @@ sigil_err_t skip_dictionary(FILE *in)
         switch (c) {
             case '>':
                 if (fgetc(in) == '>')
-                    return (sigil_err_t)ERR_NO;
+                    return ERR_NO;
                 break;
             case '<':
                 if (fgetc(in) != '<')
                     break;
                 if ((err = skip_dictionary(in)) != ERR_NO)
                     return err;
-                return (sigil_err_t)ERR_NO;
+                return ERR_NO;
             default:
                 break;
         }
     }
 
-    return (sigil_err_t)ERR_PDF_CONT;
+    return ERR_PDF_CONT;
 }
 
 sigil_err_t skip_dict_unknown_value(FILE *in)
@@ -85,20 +85,20 @@ sigil_err_t skip_dict_unknown_value(FILE *in)
         switch (c) {
             case '/':
                 if (ungetc(c, in) != c)
-                    return (sigil_err_t)ERR_IO;
-                return (sigil_err_t)ERR_NO;
+                    return ERR_IO;
+                return ERR_NO;
             case '<':
                 if (fgetc(in) != '<')
                     break;
                 if ((err = skip_dictionary(in)) != ERR_NO)
                     return err;
-                return (sigil_err_t)ERR_NO;
+                return ERR_NO;
             default:
                 break;
         }
     }
 
-    return (sigil_err_t)ERR_PDF_CONT;
+    return ERR_PDF_CONT;
 }
 
 sigil_err_t parse_number(FILE *in, size_t *number)
@@ -117,18 +117,18 @@ sigil_err_t parse_number(FILE *in, size_t *number)
     while ((c = fgetc(in)) != EOF) {
         if (!is_digit(c)) {
             if (ungetc(c, in) != c)
-                return (sigil_err_t)ERR_IO;
+                return ERR_IO;
             if (digits > 0) {
-                return (sigil_err_t)ERR_NO;
+                return ERR_NO;
             } else {
-                return (sigil_err_t)ERR_PDF_CONT;
+                return ERR_PDF_CONT;
             }
         }
         *number = 10 * *number + c - '0';
         digits++;
     }
 
-    return (sigil_err_t)ERR_PDF_CONT;
+    return ERR_PDF_CONT;
 }
 
 sigil_err_t parse_keyword(FILE *in, keyword_t *keyword)
@@ -148,28 +148,28 @@ sigil_err_t parse_keyword(FILE *in, keyword_t *keyword)
     while ((c = fgetc(in)) != EOF) {
         if (is_whitespace(c)) {
             if (count <= 0)
-                return (sigil_err_t)ERR_PDF_CONT;
+                return ERR_PDF_CONT;
             if (ungetc(c, in) != c)
-                return (sigil_err_t)ERR_IO;
+                return ERR_IO;
 
             if (strncmp(tmp, "xref", 4) == 0) {
                 *keyword = KEYWORD_xref;
-                return (sigil_err_t)ERR_NO;
+                return ERR_NO;
             }
             if (strncmp(tmp, "trailer", 7) == 0) {
                 *keyword = KEYWORD_trailer;
-                return (sigil_err_t)ERR_NO;
+                return ERR_NO;
             }
-            return (sigil_err_t)ERR_PDF_CONT;
+            return ERR_PDF_CONT;
         } else {
             if (count >= keyword_max - 1)
-                return (sigil_err_t)ERR_PDF_CONT;
+                return ERR_PDF_CONT;
             tmp[count] = c;
             count++;
         }
     }
 
-    return (sigil_err_t)ERR_PDF_CONT;
+    return ERR_PDF_CONT;
 }
 
 sigil_err_t parse_free_indicator(FILE *in, free_indicator_t *result)
@@ -186,12 +186,12 @@ sigil_err_t parse_free_indicator(FILE *in, free_indicator_t *result)
     switch(c) {
         case 'f':
             *result = FREE_ENTRY;
-            return (sigil_err_t)ERR_NO;
+            return ERR_NO;
         case 'n':
             *result = IN_USE_ENTRY;
-            return (sigil_err_t)ERR_NO;
+            return ERR_NO;
         default:
-            return (sigil_err_t)ERR_PDF_CONT;
+            return ERR_PDF_CONT;
     }
 }
 
@@ -209,8 +209,8 @@ sigil_err_t parse_indirect_reference(FILE *in, reference_t *ref)
     if (err != ERR_NO)
         return err;
     if (fgetc(in) != 'R')
-        return (sigil_err_t)ERR_PDF_CONT;
-    return (sigil_err_t)ERR_NO;
+        return ERR_PDF_CONT;
+    return ERR_NO;
 }
 
 // parse the key of the couple key - value in the dictionary
@@ -236,44 +236,44 @@ sigil_err_t parse_dict_key(FILE *in, dict_key_t *dict_key)
             break;
         case '>':
             if ((c = fgetc(in)) == '>')
-                return (sigil_err_t)ERR_PDF_CONT;
+                return ERR_PDF_CONT;
             if (ungetc(c, in) != c)
-                return (sigil_err_t)ERR_IO;
-            return (sigil_err_t)ERR_PDF_CONT;
+                return ERR_IO;
+            return ERR_PDF_CONT;
         default:
-            return (sigil_err_t)ERR_PDF_CONT;
+            return ERR_PDF_CONT;
     }
 
     while ((c = fgetc(in)) != EOF) {
         if (is_whitespace(c)) {
             if (count <= 0)
-                return (sigil_err_t)ERR_PDF_CONT;
+                return ERR_PDF_CONT;
             if (ungetc(c, in) != c)
-                return (sigil_err_t)ERR_IO;
+                return ERR_IO;
 
             if (strncmp(tmp, "Size", 4) == 0) {
                 *dict_key = DICT_KEY_Size;
-                return (sigil_err_t)ERR_NO;
+                return ERR_NO;
             }
             if (strncmp(tmp, "Prev", 4) == 0) {
                 *dict_key = DICT_KEY_Prev;
-                return (sigil_err_t)ERR_NO;
+                return ERR_NO;
             }
             if (strncmp(tmp, "Root", 4) == 0) {
                 *dict_key = DICT_KEY_Root;
-                return (sigil_err_t)ERR_NO;
+                return ERR_NO;
             }
             *dict_key = DICT_KEY_unknown;
-            return (sigil_err_t)ERR_NO;
+            return ERR_NO;
         } else {
             if (count >= dict_key_max - 1)
-                return (sigil_err_t)ERR_ALLOC;
+                return ERR_ALLOC;
             tmp[count] = c;
             count++;
         }
     }
 
-    return (sigil_err_t)ERR_PDF_CONT;
+    return ERR_PDF_CONT;
 }
 
 void print_module_name(const char *module_name, int verbosity)

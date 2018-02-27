@@ -13,14 +13,14 @@ sigil_err_t process_trailer(sigil_t *sgl)
 
     // function parameter checks
     if (sgl == NULL || sgl->file == NULL)
-        return (sigil_err_t)ERR_PARAM;
+        return ERR_PARAM;
 
     // read "trailer"
     err = parse_keyword(sgl->file, &keyword);
     if (err != ERR_NO)
         return err;
     if (keyword != KEYWORD_trailer)
-        return (sigil_err_t)ERR_PDF_CONT;
+        return ERR_PDF_CONT;
 
     err = skip_leading_whitespaces(sgl->file);
     if (err != ERR_NO)
@@ -55,7 +55,7 @@ sigil_err_t process_trailer(sigil_t *sgl)
                     return err;
                 break;
             default:
-                return (sigil_err_t)ERR_PDF_CONT;
+                return ERR_PDF_CONT;
         }
     }
 

@@ -13,12 +13,12 @@ sigil_err_t sigil_init(sigil_t **sgl)
 {
     // function parameter checks
     if (sgl == NULL)
-        return (sigil_err_t)ERR_PARAM;
+        return ERR_PARAM;
 
     *sgl = malloc(sizeof(sigil_t));
 
     if (*sgl == NULL)
-        return (sigil_err_t)ERR_ALLOC;
+        return ERR_ALLOC;
 
     // set default values
     (*sgl)->file                            = NULL;
@@ -32,7 +32,7 @@ sigil_err_t sigil_init(sigil_t **sgl)
     (*sgl)->pdf_start_offset                = 0;
     (*sgl)->startxref                       = 0;
 
-    return (sigil_err_t)ERR_NO;
+    return ERR_NO;
 }
 
 sigil_err_t sigil_verify(sigil_t *sgl, const char *filepath)
@@ -41,11 +41,11 @@ sigil_err_t sigil_verify(sigil_t *sgl, const char *filepath)
 
     // function parameter checks
     if (sgl == NULL || filepath == NULL)
-        return (sigil_err_t)ERR_PARAM;
+        return ERR_PARAM;
 
     // open provided file
     if ((sgl->file = fopen(filepath, "r")) == NULL)
-        return (sigil_err_t)ERR_IO;
+        return ERR_IO;
 
     // process header - %PDF-<pdf_x>.<pdf_y>
     err = process_header(sgl);
@@ -63,7 +63,7 @@ sigil_err_t sigil_verify(sigil_t *sgl, const char *filepath)
 
     // TODO
 
-    return (sigil_err_t)ERR_NO;
+    return ERR_NO;
 }
 
 void sigil_free(sigil_t *sgl)

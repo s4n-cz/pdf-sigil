@@ -10,11 +10,11 @@ sigil_err_t process_header(sigil_t *sgl)
 {
     // function parameter checks
     if (sgl == NULL || sgl->file == NULL)
-        return (sigil_err_t)ERR_PARAM;
+        return ERR_PARAM;
 
     if (ftell(sgl->file) != 0) {
         if (fseek(sgl->file, 0, SEEK_SET) != 0 || ftell(sgl->file) != 0)
-            return (sigil_err_t)ERR_IO;
+            return ERR_IO;
     }
 
     const char_t expected[] = {'%', 'P', 'D', 'F', '-'};
@@ -67,14 +67,14 @@ sigil_err_t process_header(sigil_t *sgl)
     }
 
     if (found != 8)
-        return (sigil_err_t)ERR_PDF_CONT;
+        return ERR_PDF_CONT;
 
     // offset counted with header -> subtract header size
     sgl->pdf_start_offset = offset - found;
     if (sgl->pdf_start_offset > HEADER_SEARCH_OFFSET)
-        return (sigil_err_t)ERR_PDF_CONT;
+        return ERR_PDF_CONT;
 
-    return (sigil_err_t)ERR_NO;
+    return ERR_NO;
 }
 
 int sigil_header_self_test(int verbosity)
