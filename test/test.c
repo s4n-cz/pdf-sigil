@@ -2,7 +2,6 @@
 #include <string.h>
 #include "auxiliary.h"
 #include "config.h"
-#include "error.h"
 #include "header.h"
 #include "sigil.h"
 #include "trailer.h"
@@ -49,8 +48,6 @@ int main(int argc, char **argv)
     if (sigil_config_self_test(verbosity) != 0)
         failed++;
     if (sigil_auxiliary_self_test(verbosity) != 0)
-        failed++;
-    if (sigil_error_self_test(verbosity) != 0)
         failed++;
     if (sigil_header_self_test(verbosity) != 0)
         failed++;

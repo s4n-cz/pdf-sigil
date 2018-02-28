@@ -1,8 +1,8 @@
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "auxiliary.h"
-#include "error.h"
+#include "constants.h"
+
 
 void sigil_zeroize(void *a, size_t bytes)
 {
@@ -47,6 +47,7 @@ sigil_err_t skip_leading_whitespaces(FILE *in)
     return ERR_NO;
 }
 
+// without leading "<<"
 sigil_err_t skip_dictionary(FILE *in)
 {
     sigil_err_t err;
@@ -67,7 +68,7 @@ sigil_err_t skip_dictionary(FILE *in)
                     break;
                 if ((err = skip_dictionary(in)) != ERR_NO)
                     return err;
-                return ERR_NO;
+                break;
             default:
                 break;
         }
@@ -276,6 +277,26 @@ sigil_err_t parse_dict_key(FILE *in, dict_key_t *dict_key)
     return ERR_PDF_CONT;
 }
 
+const char *sigil_err_string(sigil_err_t err)
+{
+    switch (err) {
+        case ERR_NO:
+            return "NO ERROR";
+        case ERR_ALLOC:
+            return "ERROR during allocation";
+        case ERR_PARAM:
+            return "ERROR wrong parameter";
+        case ERR_IO:
+            return "ERROR input/output";
+        case ERR_PDF_CONT:
+            return "ERROR corrupted PDF file";
+        case ERR_NOT_IMPL:
+            return "ERROR not implemented";
+        default:
+            return "ERROR unknown";
+    }
+}
+
 void print_module_name(const char *module_name, int verbosity)
 {
     if (verbosity < 1)
@@ -410,6 +431,60 @@ int sigil_auxiliary_self_test(int verbosity)
             goto failed;
 
         if (skip_leading_whitespaces(file) != ERR_NO ||
+            fgetc(file) != 'x')
+        {
+            goto failed;
+        }
+
+        fclose(file);
+    }
+
+    print_test_result(1, verbosity);
+
+    // TEST: fn skip_dictionary
+    print_test_item("fn skip_dictionary", verbosity);
+
+    {
+        char *sstream = "/First 2 0 R\n"        \
+                        "/Second 37 "           \
+                        "/Third true "          \
+                        "/Fourth [<86C><BA3>] " \
+                        ">>x";
+        FILE *file;
+
+        file = fmemopen(sstream,
+                        (strlen(sstream) + 1) * sizeof(*sstream),
+                        "r");
+        if (file == NULL)
+            goto failed;
+
+        if (skip_dictionary(file) != ERR_NO ||
+            fgetc(file) != 'x')
+        {
+            goto failed;
+        }
+
+        fclose(file);
+    }
+
+    print_test_result(1, verbosity);
+
+    // TEST: fn skip_dict_unknown_value
+    print_test_item("fn skip_dict_unknown_value", verbosity);
+
+    {
+        char *sstream = "<</First /NameVal\n"    \
+                        "/Second <</Nested -32 " \
+                        ">> >>x";
+        FILE *file;
+
+        file = fmemopen(sstream,
+                        (strlen(sstream) + 1) * sizeof(*sstream),
+                        "r");
+        if (file == NULL)
+            goto failed;
+
+        if (skip_dict_unknown_value(file) != ERR_NO ||
             fgetc(file) != 'x')
         {
             goto failed;

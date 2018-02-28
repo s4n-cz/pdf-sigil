@@ -15,8 +15,8 @@ INCLUDE_DIR=include
 TEST_DIR=test
 BUILD_DIR=build
 # library files
-LIB_SRC=auxiliary.c config.c error.c header.c sigil.c trailer.c xref.c
-LIB_H=$(LIB_SRC:%.c=%.h)
+LIB_SRC=auxiliary.c config.c header.c sigil.c trailer.c xref.c
+LIB_H=$(LIB_SRC:%.c=%.h) types.h constants.h
 LIB_O=$(LIB_SRC:%.c=$(BUILD_DIR)/$(LIB_DIR)/%.o)
 # test files
 TEST_SRC=test.c

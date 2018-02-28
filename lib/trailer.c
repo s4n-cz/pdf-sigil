@@ -1,9 +1,6 @@
-#include <string.h>
 #include "auxiliary.h"
-#include "error.h"
-#include "sigil.h"
-#include "xref.h"
-
+#include "constants.h"
+#include "trailer.h"
 
 sigil_err_t process_trailer(sigil_t *sgl)
 {

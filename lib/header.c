@@ -1,9 +1,9 @@
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "auxiliary.h"
 #include "config.h"
-#include "error.h"
+#include "constants.h"
+#include "header.h"
 #include "sigil.h"
 
 sigil_err_t process_header(sigil_t *sgl)

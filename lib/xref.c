@@ -1,3 +1,4 @@
+#if 0
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -6,7 +7,15 @@
 #include "error.h"
 #include "sigil.h"
 #include "xref.h"
+#endif
 
+#include <stdlib.h>
+#include <string.h>
+#include "auxiliary.h"
+#include "config.h"
+#include "constants.h"
+#include "sigil.h"
+#include "xref.h"
 
 // Determine whether this file is using Cross-reference table or stream
 static sigil_err_t determine_xref_type(sigil_t *sgl)
@@ -56,6 +65,7 @@ add_xref_entry(xref_t *xref, size_t obj, size_t offset, size_t generation)
         xref->entry[obj] = malloc(sizeof(xref_entry_t));
         if (xref->entry[obj] == NULL)
             return ERR_ALLOC;
+        sigil_zeroize(xref->entry[obj], sizeof(xref->entry[obj]));
 
         xref->entry[obj]->byte_offset = offset;
         xref->entry[obj]->generation_num = generation;
@@ -75,13 +85,14 @@ xref_t *xref_init()
     xref_t *xref = malloc(sizeof(xref_t));
     if (xref == NULL)
         return NULL;
+    sigil_zeroize(xref, sizeof(xref));
 
     xref->entry = malloc(sizeof(xref_entry_t *) * XREF_PREALLOCATION);
     if (xref->entry == NULL) {
         free(xref);
         return NULL;
     }
-    sigil_zeroize(xref->entry, sizeof(xref_entry_t *) * xref->capacity);
+    sigil_zeroize(xref->entry, sizeof(*(xref->entry)) * xref->capacity);
     xref->capacity = XREF_PREALLOCATION;
     xref->size_from_trailer = 0;
     xref->prev_section = 0;
@@ -133,9 +144,9 @@ sigil_err_t read_startxref(sigil_t *sgl)
     // prepare buffer for data
     size_t buf_len = sgl->file_size - jump_pos + 1;
     char_t *buf = malloc(buf_len * sizeof(char_t));
-    if (buf == NULL) {
+    if (buf == NULL)
         return ERR_ALLOC;
-    }
+    sigil_zeroize(buf, buf_len * sizeof(*buf));
 
     // copy data from the end of file
     size_t read = fread(buf, sizeof(*buf), buf_len - 1, sgl->file);
@@ -339,26 +350,33 @@ int sigil_xref_self_test(int verbosity)
     // TEST: fn read_startxref
     print_test_item("fn read_startxref", verbosity);
 
-    char *correct_1 = "startxref\n"                                            \
-                      "1234567890\n"                                           \
-                      "\045\045EOF"; // %%EOF
-    sgl->file = fmemopen(correct_1,
-                         (strlen(correct_1) + 1) * sizeof(*correct_1),
-                         "r");
-    if (sgl->file == NULL) {
-        goto failed;
-    }
-
-    if (read_startxref(sgl) != ERR_NO ||
-        sgl->file_size != 27          ||
-        sgl->startxref != 1234567890  )
     {
-        goto failed;
+        sgl = NULL;
+        char *sstream_1 = "startxref\n" \
+                          "1234567890\n"\
+                          "\045\045EOF"; // %%EOF
+
+        err = sigil_init(&sgl);
+        if (err != ERR_NO || sgl == NULL)
+            goto failed;
+
+        sgl->file = fmemopen(sstream_1,
+                             (strlen(sstream_1) + 1) * sizeof(*sstream_1),
+                             "r");
+        if (sgl->file == NULL)
+            goto failed;
+
+        if (read_startxref(sgl) != ERR_NO ||
+            sgl->file_size != 27          ||
+            sgl->startxref != 1234567890)
+        {
+            goto failed;
+        }
+
+        sigil_free(sgl);
     }
 
     print_test_result(1, verbosity);
-
-    fclose(sgl->file);
 
     // all tests done
     print_module_result(1, verbosity);

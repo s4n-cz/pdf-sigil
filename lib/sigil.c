@@ -1,13 +1,11 @@
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <stdlib.h>
 #include "auxiliary.h"
-#include "error.h"
+#include "constants.h"
 #include "header.h"
 #include "sigil.h"
 #include "trailer.h"
 #include "xref.h"
-
 
 sigil_err_t sigil_init(sigil_t **sgl)
 {
@@ -19,6 +17,8 @@ sigil_err_t sigil_init(sigil_t **sgl)
 
     if (*sgl == NULL)
         return ERR_ALLOC;
+
+    sigil_zeroize(*sgl, sizeof(*sgl));
 
     // set default values
     (*sgl)->file                            = NULL;
