@@ -29,6 +29,14 @@ int sigil_config_self_test(int verbosity)
 
     print_test_result(1, verbosity);
 
+    // TEST: THRESHOLD_FILE_BUFFERING
+    print_test_item("THRESHOLD_FILE_BUFFERING", verbosity);
+
+    if (THRESHOLD_FILE_BUFFERING < 0)
+        goto failed;
+
+    print_test_result(1, verbosity);
+
     // all tests done
     print_module_result(1, verbosity);
     return 0;

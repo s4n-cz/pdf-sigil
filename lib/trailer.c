@@ -7,52 +7,50 @@ sigil_err_t process_trailer(sigil_t *sgl)
     sigil_err_t err;
     keyword_t keyword;
     dict_key_t dict_key;
+    char c;
 
-    // function parameter checks
-    if (sgl == NULL || sgl->file == NULL)
-        return ERR_PARAM;
+    if (sgl == NULL)
+        return ERR_PARAMETER;
 
     // read "trailer"
-    err = parse_keyword(sgl->file, &keyword);
+    err = parse_keyword(sgl, &keyword);
     if (err != ERR_NO)
         return err;
     if (keyword != KEYWORD_trailer)
-        return ERR_PDF_CONT;
+        return ERR_PDF_CONTENT;
 
-    err = skip_leading_whitespaces(sgl->file);
+    err = skip_leading_whitespaces(sgl);
     if (err != ERR_NO)
         return err;
-    // if merged into one if statement with the '&&' operator in between, it's
-    //   optimized out and position in the file is not changed
-    if (fgetc(sgl->file) != '<')
-        return 1;
-    if (fgetc(sgl->file) != '<')
-        return 1;
+    if ((pdf_get_char(sgl, &c)) != ERR_NO || c != '<')
+        return ERR_PDF_CONTENT;
+    if ((pdf_get_char(sgl, &c)) != ERR_NO || c != '<')
+        return ERR_PDF_CONTENT;
 
-    while ((err = parse_dict_key(sgl->file, &dict_key)) == ERR_NO) {
+    while ((err = parse_dict_key(sgl, &dict_key)) == ERR_NO) {
         switch (dict_key) {
             case DICT_KEY_Size:
-                err = parse_number(sgl->file, &sgl->xref->size_from_trailer);
+                err = parse_number(sgl, &(sgl->xref->size_from_trailer));
                 if (err != ERR_NO)
                     return err;
                 break;
             case DICT_KEY_Prev:
-                err = parse_number(sgl->file, &sgl->xref->prev_section);
+                err = parse_number(sgl, &(sgl->xref->prev_section));
                 if (err != ERR_NO)
                     return err;
                 break;
             case DICT_KEY_Root:
-                err = parse_indirect_reference(sgl->file, &sgl->ref_catalog_dict);
+                err = parse_indirect_reference(sgl, &(sgl->ref_catalog_dict));
                 if (err != ERR_NO)
                     return err;
                 break;
-            case DICT_KEY_unknown:
-                err = skip_dict_unknown_value(sgl->file);
+            case DICT_KEY_UNKNOWN:
+                err = skip_dict_unknown_value(sgl);
                 if (err != ERR_NO)
                     return err;
                 break;
             default:
-                return ERR_PDF_CONT;
+                return ERR_PDF_CONTENT;
         }
     }
 

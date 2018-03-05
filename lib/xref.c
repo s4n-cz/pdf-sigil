@@ -1,14 +1,3 @@
-#if 0
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include "auxiliary.h"
-#include "config.h"
-#include "error.h"
-#include "sigil.h"
-#include "xref.h"
-#endif
-
 #include <stdlib.h>
 #include <string.h>
 #include "auxiliary.h"
@@ -20,16 +9,22 @@
 // Determine whether this file is using Cross-reference table or stream
 static sigil_err_t determine_xref_type(sigil_t *sgl)
 {
-    if (fseek(sgl->file, sgl->startxref, SEEK_SET) != 0)
-        return ERR_IO;
+    sigil_err_t err;
+    char c;
 
-    char_t c = fgetc(sgl->file);
+    err = pdf_move_pos_abs(sgl, sgl->startxref);
+    if (err != ERR_NO)
+        return err;
+
+    if ((err = pdf_peek_char(sgl, &c)) != ERR_NO)
+        return err;
+
     if (c == 'x') {
         sgl->xref_type = XREF_TYPE_TABLE;
     } else if (is_digit(c)) {
         sgl->xref_type = XREF_TYPE_STREAM;
     } else {
-        return ERR_PDF_CONT;
+        return ERR_PDF_CONTENT;
     }
 
     return ERR_NO;
@@ -41,15 +36,17 @@ add_xref_entry(xref_t *xref, size_t obj, size_t offset, size_t generation)
     int resize_factor = 1;
 
     if (xref == NULL)
-        return ERR_PARAM;
+        return ERR_PARAMETER;
 
     // resize if needed
-    while (obj > resize_factor * xref->capacity - 1)
+    while (obj > resize_factor * xref->capacity - 1) {
         resize_factor *= 2;
+    }
+
     if (resize_factor != 1) {
         xref->entry = realloc(xref->entry,sizeof(xref_entry_t *) * xref->capacity * resize_factor);
         if (xref->entry == NULL)
-            return ERR_ALLOC;
+            return ERR_ALLOCATION;
         sigil_zeroize(xref->entry + xref->capacity, sizeof(xref_entry_t *) * (xref->capacity * (resize_factor - 1)));
         xref->capacity *= resize_factor;
     }
@@ -64,14 +61,14 @@ add_xref_entry(xref_t *xref, size_t obj, size_t offset, size_t generation)
     } else {
         xref->entry[obj] = malloc(sizeof(xref_entry_t));
         if (xref->entry[obj] == NULL)
-            return ERR_ALLOC;
+            return ERR_ALLOCATION;
         sigil_zeroize(xref->entry[obj], sizeof(xref->entry[obj]));
 
         xref->entry[obj]->byte_offset = offset;
         xref->entry[obj]->generation_num = generation;
     }
 
-    return ERR_ALLOC;
+    return ERR_ALLOCATION;
 }
 
 static void free_xref_entry(xref_entry_t *entry)
@@ -117,122 +114,98 @@ void xref_free(xref_t *xref)
 
 sigil_err_t read_startxref(sigil_t *sgl)
 {
-    // function parameter checks
-    if (sgl == NULL || sgl->file == NULL) {
-        return ERR_PARAM;
-    }
+    sigil_err_t err;
+    size_t file_size;
+    size_t offset;
+    size_t read_size;
+    char tmp[10];
 
-    // jump to the end of file
-    if (fseek(sgl->file, 0, SEEK_END) != 0) {
-        return ERR_IO;
-    }
+    if (sgl == NULL)
+        return ERR_PARAMETER;
 
-    // get file size
-    if (sgl->file_size <= 0) {
-        sgl->file_size = ftell(sgl->file);
-        if (sgl->file_size < 0) {
-            return ERR_IO;
+    file_size = sgl->pdf_data.size - 1;
+
+    err = pdf_move_pos_abs(sgl, file_size - 9);
+    if (err != ERR_NO)
+        return err;
+    offset = 9;
+
+    while (1) {
+        if (offset > XREF_SEARCH_OFFSET)
+            return ERR_PDF_CONTENT;
+
+        err = pdf_read(sgl, 9, tmp, &read_size);
+        if (err != ERR_NO)
+            return err;
+        if (read_size != 9)
+            return ERR_PDF_CONTENT;
+
+        if (strncmp(tmp, "startxref", 9) == 0) {
+            if ((err = parse_number(sgl, &(sgl->startxref))) != ERR_NO)
+                return err;
+            if (sgl->startxref == 0)
+                return ERR_PDF_CONTENT;
+
+            return ERR_NO;
         }
+
+        if ((err = pdf_move_pos_rel(sgl, -10)) != ERR_NO)
+            return err;
+        offset++;
     }
 
-    // jump max XREF_SEARCH_OFFSET bytes from end
-    size_t jump_pos = MAX(0, (ssize_t)sgl->file_size - XREF_SEARCH_OFFSET);
-    if (fseek(sgl->file, jump_pos, SEEK_SET) != 0) {
-        return ERR_IO;
-    }
-
-    // prepare buffer for data
-    size_t buf_len = sgl->file_size - jump_pos + 1;
-    char_t *buf = malloc(buf_len * sizeof(char_t));
-    if (buf == NULL)
-        return ERR_ALLOC;
-    sigil_zeroize(buf, buf_len * sizeof(*buf));
-
-    // copy data from the end of file
-    size_t read = fread(buf, sizeof(*buf), buf_len - 1, sgl->file);
-    if (read <= 0) {
-        free(buf);
-        return ERR_IO;
-    }
-    buf[read] = '\0';
-
-    // search for 'startxref' from the end
-    for (int i = read - 9; i >= 0; i--) {
-        if (memcmp(buf + i, "startxref", 9) == 0) {
-            i += 9;
-            while (i < read && is_whitespace(buf[i])) {
-                i++;
-            }
-            if (!is_digit(buf[i])) {
-                free(buf);
-                return ERR_PDF_CONT;
-            }
-            sgl->startxref = 0;
-            while (i < read && is_digit(buf[i])) {
-                sgl->startxref = 10 * sgl->startxref + buf[i] - '0';
-                i++;
-            }
-            break;
-        }
-    }
-
-    free(buf);
-
-    if (sgl->startxref == 0)
-        return ERR_PDF_CONT;
-
-    return ERR_NO;
+    return ERR_PDF_CONTENT;
 }
 
 sigil_err_t read_xref_table(sigil_t *sgl)
 {
-    char tmp[5];
     free_indicator_t free_indicator;
     size_t section_start = 0,
            section_cnt = 0,
            obj_offset,
            obj_generation;
     int xref_end = 0;
+    keyword_t keyword;
     sigil_err_t err;
 
     if (sgl->xref == NULL)
         sgl->xref = xref_init();
     if (sgl->xref == NULL)
-        return ERR_ALLOC;
+        return ERR_ALLOCATION;
 
-    if (fseek(sgl->file, sgl->startxref, SEEK_SET) != 0)
-        return ERR_IO;
+    err = pdf_move_pos_abs(sgl, sgl->startxref);
+    if (err != ERR_NO)
+        return err;
 
     // read "xref"
-    if (fgets(tmp, 5, sgl->file) == NULL)
-        return ERR_IO;
-
-    if (strncmp(tmp, "xref", 4) != 0)
-        return ERR_PDF_CONT;
+    if ((err = parse_keyword(sgl, &keyword)) != ERR_NO)
+        return err;
+    if (keyword != KEYWORD_xref)
+        return ERR_PDF_CONTENT;
 
     while (!xref_end) { // for all xref sections
         while (1) {
             // read 2 numbers:
             //     - first object in subsection
             //     - number of entries in subsection
-            if (parse_number(sgl->file, &section_start) != ERR_NO) {
+            if (parse_number(sgl, &section_start) != ERR_NO) {
                 xref_end = 1;
                 break;
             }
-            if (parse_number(sgl->file, &section_cnt) != ERR_NO)
+            if (parse_number(sgl, &section_cnt) != ERR_NO)
                 return 1;
             if (section_start < 0 || section_cnt < 1)
                 return 1;
 
             // for all entries in one section
             for (int section_offset = 0; section_offset < section_cnt; section_offset++) {
-                err = parse_number(sgl->file, &obj_offset);
+                err = parse_number(sgl, &obj_offset);
                 if (err != ERR_NO)
                     return err;
-                err = parse_number(sgl->file, &obj_generation);
+                err = parse_number(sgl, &obj_generation);
                 if (err != ERR_NO)
                     return err;
-                err = parse_free_indicator(sgl->file, &free_indicator);
+                err = parse_free_indicator(sgl, &free_indicator);
                 if (err != ERR_NO)
                     return err;
                 size_t obj_num = section_start + section_offset;
@@ -243,6 +216,7 @@ sigil_err_t read_xref_table(sigil_t *sgl)
             }
         }
     }
+
     return ERR_NO;
 }
 
@@ -250,10 +224,8 @@ sigil_err_t process_xref(sigil_t *sgl)
 {
     sigil_err_t err;
 
-    // function parameter checks
-    if (sgl == NULL || sgl->file == NULL || sgl->startxref == 0) {
-        return ERR_PARAM;
-    }
+    if (sgl == NULL || sgl->startxref == 0)
+        return ERR_PARAMETER;
 
     err = read_startxref(sgl);
     if (err != ERR_NO)
@@ -268,9 +240,9 @@ sigil_err_t process_xref(sigil_t *sgl)
             read_xref_table(sgl);
             break;
         case XREF_TYPE_STREAM:
-            return ERR_NOT_IMPL; // TODO
+            return ERR_NOT_IMPLEMENTED; // TODO
         default:
-            return ERR_PDF_CONT;
+            return ERR_PDF_CONTENT;
     }
 
     return ERR_NO;
@@ -290,7 +262,6 @@ void print_xref(xref_t *xref)
 
 int sigil_xref_self_test(int verbosity)
 {
-    sigil_err_t err;
     sigil_t *sgl = NULL;
 
     print_module_name("xref", verbosity);
@@ -299,14 +270,11 @@ int sigil_xref_self_test(int verbosity)
     print_test_item("fn determine_xref_type TABLE", verbosity);
 
     {
-        sgl = NULL;
-        err = sigil_init(&sgl);
-        if (err != ERR_NO || sgl == NULL)
+        sgl = test_prepare_sgl_path(
+            "test/uznavany_bez_razitka_bez_revinfo_27_2_2012_CMS.pdf");
+        if (sgl == NULL)
             goto failed;
 
-        sgl->file = fopen("test/uznavany_bez_razitka_bez_revinfo_27_2_2012_CMS.pdf", "r");
-        if (sgl->file == NULL)
-            goto failed;
         sgl->xref_type = XREF_TYPE_UNSET;
         sgl->startxref = 67954;
 
@@ -316,7 +284,7 @@ int sigil_xref_self_test(int verbosity)
             goto failed;
         }
 
-        sigil_free(sgl);
+        sigil_free(&sgl);
     }
 
     print_test_result(1, verbosity);
@@ -325,14 +293,11 @@ int sigil_xref_self_test(int verbosity)
     print_test_item("fn determine_xref_type STREAM", verbosity);
 
     {
-        sgl = NULL;
-        err = sigil_init(&sgl);
-        if (err != ERR_NO || sgl == NULL)
+        sgl = test_prepare_sgl_path(
+            "test/SampleSignedPDFDocument.pdf");
+        if (sgl == NULL)
             goto failed;
 
-        sgl->file = fopen("test/SampleSignedPDFDocument.pdf", "r");
-        if (sgl->file == NULL)
-            goto failed;
         sgl->xref_type = XREF_TYPE_UNSET;
         sgl->startxref = 116;
 
@@ -342,7 +307,7 @@ int sigil_xref_self_test(int verbosity)
             goto failed;
         }
 
-        sigil_free(sgl);
+        sigil_free(&sgl);
     }
 
     print_test_result(1, verbosity);
@@ -351,29 +316,20 @@ int sigil_xref_self_test(int verbosity)
     print_test_item("fn read_startxref", verbosity);
 
     {
-        sgl = NULL;
-        char *sstream_1 = "startxref\n" \
-                          "1234567890\n"\
-                          "\045\045EOF"; // %%EOF
-
-        err = sigil_init(&sgl);
-        if (err != ERR_NO || sgl == NULL)
-            goto failed;
-
-        sgl->file = fmemopen(sstream_1,
-                             (strlen(sstream_1) + 1) * sizeof(*sstream_1),
-                             "r");
-        if (sgl->file == NULL)
+        char *sstream = "abcdefghi\n" \
+                        "startxref\n" \
+                        "1234567890\n"\
+                        "\045\045EOF"; // %%EOF
+        if ((sgl = test_prepare_sgl_content(sstream, strlen(sstream) + 1)) == NULL)
             goto failed;
 
         if (read_startxref(sgl) != ERR_NO ||
-            sgl->file_size != 27          ||
             sgl->startxref != 1234567890)
         {
             goto failed;
         }
 
-        sigil_free(sgl);
+        sigil_free(&sgl);
     }
 
     print_test_result(1, verbosity);
@@ -384,9 +340,10 @@ int sigil_xref_self_test(int verbosity)
 
 failed:
     if (sgl)
-        sigil_free(sgl);
+        sigil_free(&sgl);
 
     print_test_result(0, verbosity);
     print_module_result(0, verbosity);
+
     return 1;
 }

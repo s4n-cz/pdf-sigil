@@ -2,6 +2,7 @@
 #include <string.h>
 #include "auxiliary.h"
 #include "constants.h"
+#include "sigil.h"
 
 
 void sigil_zeroize(void *a, size_t bytes)
@@ -31,67 +32,225 @@ int is_whitespace(const char_t c)
             c == 0x20);  // space
 }
 
-sigil_err_t skip_leading_whitespaces(FILE *in)
+// writes size bytes of data + 1 byte of null terminator to result
+// res_size is just the number of read bytes, without the terminating null
+sigil_err_t pdf_read(sigil_t *sgl, size_t size, char *result, size_t *res_size)
 {
-    char_t c;
+    size_t read_size;
+    size_t items_processed;
 
-    while ((c = fgetc(in)) != EOF && is_whitespace(c))
-        ;
+    if (sgl == NULL || size <= 0 || result == NULL || res_size == NULL)
+        return ERR_PARAMETER;
 
-    if (c == EOF)
-        return ERR_PDF_CONT;
+    if (sgl->pdf_data.buffer != NULL) {
+        read_size = MIN(size, sgl->pdf_data.size - sgl->pdf_data.buf_pos);
+        if (read_size <= 0)
+            return ERR_NO_DATA;
 
-    if (ungetc(c, in) != c)
-        return ERR_IO;
+        if (memcpy(result, &(sgl->pdf_data.buffer[sgl->pdf_data.buf_pos]),
+            read_size) != result)
+        {
+            return ERR_IO;
+        }
+        result[read_size] = '\0';
+        sgl->pdf_data.buf_pos += read_size;
 
-    return ERR_NO;
+        *res_size = read_size;
+
+        return ERR_NO;
+    }
+
+    if (sgl->pdf_data.file != NULL) {
+        items_processed = fread(result, size, sizeof(char), sgl->pdf_data.file);
+        if (items_processed <= 0 || items_processed > size)
+            return ERR_IO;
+        read_size = items_processed * sizeof(char);
+        result[read_size] = '\0';
+
+        *res_size = read_size;
+
+        return ERR_NO;
+    }
+
+    return ERR_NO_DATA;
 }
 
-// without leading "<<"
-sigil_err_t skip_dictionary(FILE *in)
+sigil_err_t pdf_get_char(sigil_t *sgl, char *result)
+{
+    if (sgl == NULL || result == NULL)
+        return ERR_PARAMETER;
+
+    if (sgl->pdf_data.buffer != NULL) {
+        if (sgl->pdf_data.buf_pos >= sgl->pdf_data.size)
+            return ERR_NO_DATA;
+
+        *result = sgl->pdf_data.buffer[(sgl->pdf_data.buf_pos)++];
+        return ERR_NO;
+    }
+
+    if (sgl->pdf_data.file != NULL) {
+        *result = getc(sgl->pdf_data.file);
+        if (*result == EOF)
+            return ERR_NO_DATA;
+        return ERR_NO;
+    }
+
+    return ERR_NO_DATA;
+}
+
+sigil_err_t pdf_peek_char(sigil_t *sgl, char *result)
 {
     sigil_err_t err;
-    char c;
 
-    err = skip_leading_whitespaces(in);
+    err = pdf_get_char(sgl, result);
     if (err != ERR_NO)
         return err;
 
-    while ((c = fgetc(in)) != EOF) {
-        switch (c) {
-            case '>':
-                if (fgetc(in) == '>')
-                    return ERR_NO;
-                break;
-            case '<':
-                if (fgetc(in) != '<')
-                    break;
-                if ((err = skip_dictionary(in)) != ERR_NO)
-                    return err;
-                break;
-            default:
-                break;
-        }
+    if (sgl->pdf_data.buffer != NULL) {
+        if (--(sgl->pdf_data.buf_pos) < 0)
+            return ERR_IO;
+        return ERR_NO;
     }
 
-    return ERR_PDF_CONT;
+    if (sgl->pdf_data.file != NULL) {
+        if (ungetc(*result, sgl->pdf_data.file) != *result)
+            return ERR_IO;
+        return ERR_NO;
+    }
+
+    return ERR_NO_DATA;
 }
 
-sigil_err_t skip_dict_unknown_value(FILE *in)
+// shifts position relatively to current position in boundaries between
+//   beginning of file and end of file
+sigil_err_t pdf_move_pos_rel(sigil_t *sgl, ssize_t shift_bytes)
+{
+    ssize_t final_position;
+
+    if (sgl == NULL)
+        return ERR_PARAMETER;
+
+    if (shift_bytes == 0)
+        return ERR_NO;
+
+    if (sgl->pdf_data.buffer != NULL) {
+        final_position = sgl->pdf_data.buf_pos + shift_bytes;
+        if (final_position < 0) {
+            final_position = 0;
+        } else if (final_position > sgl->pdf_data.size - 1) {
+            final_position = sgl->pdf_data.size - 1;
+        }
+
+        sgl->pdf_data.buf_pos = final_position;
+
+        return ERR_NO;
+    }
+
+    if (sgl->pdf_data.file != NULL) {
+        if (fseek(sgl->pdf_data.file, shift_bytes, SEEK_CUR) != 0)
+            return ERR_IO;
+        return ERR_NO;
+    }
+
+    return ERR_NO_DATA;
+}
+
+// shifts position to absolute position in file
+sigil_err_t pdf_move_pos_abs(sigil_t *sgl, size_t position)
+{
+    if (sgl == NULL)
+        return ERR_PARAMETER;
+
+    if (position == 0)
+        return ERR_NO;
+
+    if (sgl->pdf_data.buffer != NULL) {
+        if (position > sgl->pdf_data.size - 1)
+            return ERR_IO;
+
+        sgl->pdf_data.buf_pos = position;
+
+        return ERR_NO;
+    }
+
+    if (sgl->pdf_data.file != NULL) {
+        if (fseek(sgl->pdf_data.file, position, SEEK_SET) != 0)
+            return ERR_IO;
+
+        return ERR_NO;
+    }
+
+    return ERR_NO_DATA;
+}
+
+sigil_err_t skip_leading_whitespaces(sigil_t *sgl)
 {
     sigil_err_t err;
     char c;
 
-    while ((c = fgetc(in)) != EOF) {
+    while((err = pdf_peek_char(sgl, &c)) == ERR_NO) {
+        if (!is_whitespace(c))
+            return ERR_NO;
+
+        err = pdf_move_pos_rel(sgl, 1);
+        if (err != ERR_NO)
+            return err;
+    }
+
+    return err;
+}
+
+// without leading "<<"
+sigil_err_t skip_dictionary(sigil_t *sgl)
+{
+    sigil_err_t err;
+    char c;
+
+    err = skip_leading_whitespaces(sgl);
+    if (err != ERR_NO)
+        return err;
+
+    while ((err = pdf_get_char(sgl, &c)) == ERR_NO) {
+        switch (c) {
+            case '>':
+                if ((err = pdf_get_char(sgl, &c)) != ERR_NO)
+                    return err;
+                if (c == '>')
+                    return ERR_NO;
+                break;
+            case '<':
+                if ((err = pdf_get_char(sgl, &c)) != ERR_NO)
+                    return err;
+                if (c != '<')
+                    break;
+                if ((err = skip_dictionary(sgl)) != ERR_NO)
+                    return err;
+                break;
+            default:
+                break;
+        }
+    }
+
+    return err;
+}
+
+sigil_err_t skip_dict_unknown_value(sigil_t *sgl)
+{
+    sigil_err_t err;
+    char c;
+
+    while ((err = pdf_peek_char(sgl, &c)) == ERR_NO) {
         switch (c) {
             case '/':
-                if (ungetc(c, in) != c)
-                    return ERR_IO;
                 return ERR_NO;
             case '<':
-                if (fgetc(in) != '<')
+                if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NO)
+                    return err;
+                if ((err = pdf_peek_char(sgl, &c)) != ERR_NO)
+                    return err;
+                if (c != '<')
                     break;
-                if ((err = skip_dictionary(in)) != ERR_NO)
+                if ((err = skip_dictionary(sgl)) != ERR_NO)
                     return err;
                 return ERR_NO;
             default:
@@ -99,40 +258,43 @@ sigil_err_t skip_dict_unknown_value(FILE *in)
         }
     }
 
-    return ERR_PDF_CONT;
+    return err;
 }
 
-sigil_err_t parse_number(FILE *in, size_t *number)
+sigil_err_t parse_number(sigil_t *sgl, size_t *number)
 {
-    char_t c;
-    int digits = 0;
     sigil_err_t err;
+    char c;
+    int digits = 0;
 
     *number = 0;
 
-    err = skip_leading_whitespaces(in);
+    err = skip_leading_whitespaces(sgl);
     if (err != ERR_NO)
         return err;
 
     // number
-    while ((c = fgetc(in)) != EOF) {
+    while ((err = pdf_peek_char(sgl, &c)) == ERR_NO) {
         if (!is_digit(c)) {
-            if (ungetc(c, in) != c)
-                return ERR_IO;
             if (digits > 0) {
                 return ERR_NO;
             } else {
-                return ERR_PDF_CONT;
+                return ERR_PDF_CONTENT;
             }
         }
-        *number = 10 * *number + c - '0';
+
+        *number = 10 * (*number) + c - '0';
+
+        if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NO)
+            return err;
+
         digits++;
     }
 
-    return ERR_PDF_CONT;
+    return err;
 }
 
-sigil_err_t parse_keyword(FILE *in, keyword_t *keyword)
+sigil_err_t parse_keyword(sigil_t *sgl, keyword_t *keyword)
 {
     sigil_err_t err;
     int count = 0;
@@ -142,47 +304,52 @@ sigil_err_t parse_keyword(FILE *in, keyword_t *keyword)
 
     sigil_zeroize(tmp, keyword_max * sizeof(*tmp));
 
-    err = skip_leading_whitespaces(in);
+    err = skip_leading_whitespaces(sgl);
     if (err != ERR_NO)
         return err;
 
-    while ((c = fgetc(in)) != EOF) {
+    while ((err = pdf_peek_char(sgl, &c)) == ERR_NO) {
         if (is_whitespace(c)) {
             if (count <= 0)
-                return ERR_PDF_CONT;
-            if (ungetc(c, in) != c)
-                return ERR_IO;
-
-            if (strncmp(tmp, "xref", 4) == 0) {
-                *keyword = KEYWORD_xref;
-                return ERR_NO;
-            }
-            if (strncmp(tmp, "trailer", 7) == 0) {
-                *keyword = KEYWORD_trailer;
-                return ERR_NO;
-            }
-            return ERR_PDF_CONT;
+                return ERR_PDF_CONTENT;
+            break;
         } else {
             if (count >= keyword_max - 1)
-                return ERR_PDF_CONT;
-            tmp[count] = c;
-            count++;
+                return ERR_PDF_CONTENT;
+            tmp[count++] = c;
         }
+
+        if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NO)
+            return err;
     }
 
-    return ERR_PDF_CONT;
+    if (err != ERR_NO)
+        return err;
+
+    if (strncmp(tmp, "xref", 4) == 0) {
+        *keyword = KEYWORD_xref;
+        return ERR_NO;
+    }
+    if (strncmp(tmp, "trailer", 7) == 0) {
+        *keyword = KEYWORD_trailer;
+        return ERR_NO;
+    }
+
+    return ERR_PDF_CONTENT;
 }
 
-sigil_err_t parse_free_indicator(FILE *in, free_indicator_t *result)
+sigil_err_t parse_free_indicator(sigil_t *sgl, free_indicator_t *result)
 {
     sigil_err_t err;
     char c;
 
-    err = skip_leading_whitespaces(in);
+    err = skip_leading_whitespaces(sgl);
     if (err != ERR_NO)
         return err;
 
-    c = fgetc(in);
+    err = pdf_get_char(sgl, &c);
+    if (err != ERR_NO)
+        return err;
 
     switch(c) {
         case 'f':
@@ -192,30 +359,39 @@ sigil_err_t parse_free_indicator(FILE *in, free_indicator_t *result)
             *result = IN_USE_ENTRY;
             return ERR_NO;
         default:
-            return ERR_PDF_CONT;
+            return ERR_PDF_CONTENT;
     }
 }
 
-sigil_err_t parse_indirect_reference(FILE *in, reference_t *ref)
+sigil_err_t parse_indirect_reference(sigil_t *sgl, reference_t *ref)
 {
     sigil_err_t err;
+    char c;
 
-    err = parse_number(in, &ref->object_num);
+    err = parse_number(sgl, &ref->object_num);
     if (err != ERR_NO)
         return err;
-    err = parse_number(in, &ref->generation_num);
+
+    err = parse_number(sgl, &ref->generation_num);
     if (err != ERR_NO)
         return err;
-    err = skip_leading_whitespaces(in);
+
+    err = skip_leading_whitespaces(sgl);
     if (err != ERR_NO)
         return err;
-    if (fgetc(in) != 'R')
-        return ERR_PDF_CONT;
+
+    err = pdf_get_char(sgl, &c);
+    if (err != ERR_NO)
+        return err;
+
+    if (c != 'R')
+        return ERR_PDF_CONTENT;
+
     return ERR_NO;
 }
 
 // parse the key of the couple key - value in the dictionary
-sigil_err_t parse_dict_key(FILE *in, dict_key_t *dict_key)
+sigil_err_t parse_dict_key(sigil_t *sgl, dict_key_t *dict_key)
 {
     sigil_err_t err;
     const int dict_key_max = 10;
@@ -225,73 +401,77 @@ sigil_err_t parse_dict_key(FILE *in, dict_key_t *dict_key)
 
     sigil_zeroize(tmp, dict_key_max * sizeof(*tmp));
 
-    err = skip_leading_whitespaces(in);
+    err = skip_leading_whitespaces(sgl);
     if (err != ERR_NO)
         return err;
 
-    if ((c = fgetc(in)) == EOF)
-        return 1;
+    err = pdf_peek_char(sgl, &c);
+    if (err != ERR_NO)
+        return err;
 
     switch (c) {
         case '/':
             break;
-        case '>':
-            if ((c = fgetc(in)) == '>')
-                return ERR_PDF_CONT;
-            if (ungetc(c, in) != c)
-                return ERR_IO;
-            return ERR_PDF_CONT;
+        case '>': // test end of dictionary
+            if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NO)
+                return err;
+            if ((err = pdf_get_char(sgl, &c)) != ERR_NO)
+                return err;
+            if (c != '>')
+                return ERR_PDF_CONTENT;
+            return ERR_END_OF_DICT;
         default:
-            return ERR_PDF_CONT;
+            return ERR_PDF_CONTENT;
     }
 
-    while ((c = fgetc(in)) != EOF) {
+
+    while ((err = pdf_peek_char(sgl, &c)) == ERR_NO) {
         if (is_whitespace(c)) {
             if (count <= 0)
-                return ERR_PDF_CONT;
-            if (ungetc(c, in) != c)
-                return ERR_IO;
-
-            if (strncmp(tmp, "Size", 4) == 0) {
-                *dict_key = DICT_KEY_Size;
-                return ERR_NO;
-            }
-            if (strncmp(tmp, "Prev", 4) == 0) {
-                *dict_key = DICT_KEY_Prev;
-                return ERR_NO;
-            }
-            if (strncmp(tmp, "Root", 4) == 0) {
-                *dict_key = DICT_KEY_Root;
-                return ERR_NO;
-            }
-            *dict_key = DICT_KEY_unknown;
-            return ERR_NO;
+                return ERR_PDF_CONTENT;
+            break;
         } else {
             if (count >= dict_key_max - 1)
-                return ERR_ALLOC;
-            tmp[count] = c;
-            count++;
+                return ERR_PDF_CONTENT;
+            tmp[count++] = c;
         }
+
+        if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NO)
+            return err;
     }
 
-    return ERR_PDF_CONT;
+    if (strncmp(tmp, "Size", 4) == 0) {
+        *dict_key = DICT_KEY_Size;
+    } else if (strncmp(tmp, "Prev", 4) == 0) {
+        *dict_key = DICT_KEY_Prev;
+    } else if (strncmp(tmp, "Root", 4) == 0) {
+        *dict_key = DICT_KEY_Root;
+    } else {
+        *dict_key = DICT_KEY_UNKNOWN;
+    }
+
+    return ERR_NO;
 }
 
 const char *sigil_err_string(sigil_err_t err)
 {
     switch (err) {
         case ERR_NO:
-            return "NO ERROR";
-        case ERR_ALLOC:
+            return "finished without any error";
+        case ERR_ALLOCATION:
             return "ERROR during allocation";
-        case ERR_PARAM:
-            return "ERROR wrong parameter";
+        case ERR_PARAMETER:
+            return "ERROR bad data between function parameters";
         case ERR_IO:
-            return "ERROR input/output";
-        case ERR_PDF_CONT:
-            return "ERROR corrupted PDF file";
-        case ERR_NOT_IMPL:
-            return "ERROR not implemented";
+            return "ERROR during performing input/output operation";
+        case ERR_PDF_CONTENT:
+            return "ERROR unexpected data on input, probably corrupted PDF file";
+        case ERR_NOT_IMPLEMENTED:
+            return "ERROR this functionality is not currently available";
+        case ERR_NO_DATA:
+            return "ERROR no data available";
+        case ERR_END_OF_DICT:
+            return "ERROR end of dictionary occured while processing it's content";
         default:
             return "ERROR unknown";
     }
@@ -337,8 +517,41 @@ void print_test_result(int result, int verbosity)
     }
 }
 
+sigil_t *test_prepare_sgl_content(char *content, size_t size)
+{
+    sigil_t *sgl;
+
+    if (sigil_init(&sgl) != ERR_NO)
+        return NULL;
+
+    if (sigil_set_pdf_buffer(sgl, content, size) != ERR_NO) {
+        sigil_free(&sgl);
+        return NULL;
+    }
+
+    return sgl;
+}
+
+sigil_t *test_prepare_sgl_path(const char *path)
+{
+    sigil_t *sgl;
+
+    if (sigil_init(&sgl) != ERR_NO)
+        return NULL;
+
+    if (sigil_set_pdf_path(sgl, path) != ERR_NO) {
+        sigil_free(&sgl);
+        return NULL;
+    }
+
+    return sgl;
+}
+
 int sigil_auxiliary_self_test(int verbosity)
 {
+    sigil_t *sgl = NULL;
+    char c;
+
     print_module_name("auxiliary", verbosity);
 
     // TEST: MIN and MAX macros
@@ -406,37 +619,27 @@ int sigil_auxiliary_self_test(int verbosity)
     print_test_item("fn skip_leading_whitespaces", verbosity);
 
     {
-        char *sstream_1 = "x";
-        char *sstream_2 = "\x00\x09\x0a\x0c\x0d\x20x";
-        FILE *file;
-
-        file = fmemopen(sstream_1,
-                        (strlen(sstream_1) + 1) * sizeof(*sstream_1),
-                        "r");
-        if (file == NULL)
+        if ((sgl = test_prepare_sgl_content("x", 2)) == NULL)
             goto failed;
 
-        if (skip_leading_whitespaces(file) != ERR_NO ||
-            fgetc(file) != 'x')
-        {
-            goto failed;
-        }
-
-        fclose(file);
-
-        file = fmemopen(sstream_2,
-                        (7 + 1) * sizeof(*sstream_2), // cannot use strlen
-                        "r");
-        if (file == NULL)
+        if (skip_leading_whitespaces(sgl) != ERR_NO)
             goto failed;
 
-        if (skip_leading_whitespaces(file) != ERR_NO ||
-            fgetc(file) != 'x')
-        {
+        if ((pdf_get_char(sgl, &c)) != ERR_NO || c != 'x')
             goto failed;
-        }
 
-        fclose(file);
+        sigil_free(&sgl);
+
+        if ((sgl = test_prepare_sgl_content("\x00\x09\x0a\x0c\x0d\x20x", 8)) == NULL)
+            goto failed;
+
+        if (skip_leading_whitespaces(sgl) != ERR_NO)
+            goto failed;
+
+        if ((pdf_get_char(sgl, &c)) != ERR_NO || c != 'x')
+            goto failed;
+
+        sigil_free(&sgl);
     }
 
     print_test_result(1, verbosity);
@@ -450,21 +653,16 @@ int sigil_auxiliary_self_test(int verbosity)
                         "/Third true "          \
                         "/Fourth [<86C><BA3>] " \
                         ">>x";
-        FILE *file;
-
-        file = fmemopen(sstream,
-                        (strlen(sstream) + 1) * sizeof(*sstream),
-                        "r");
-        if (file == NULL)
+        if ((sgl = test_prepare_sgl_content(sstream, strlen(sstream) + 1)) == NULL)
             goto failed;
 
-        if (skip_dictionary(file) != ERR_NO ||
-            fgetc(file) != 'x')
-        {
+        if (skip_dictionary(sgl) != ERR_NO)
             goto failed;
-        }
 
-        fclose(file);
+        if ((pdf_get_char(sgl, &c)) != ERR_NO || c != 'x')
+            goto failed;
+
+        sigil_free(&sgl);
     }
 
     print_test_result(1, verbosity);
@@ -476,21 +674,16 @@ int sigil_auxiliary_self_test(int verbosity)
         char *sstream = "<</First /NameVal\n"    \
                         "/Second <</Nested -32 " \
                         ">> >>x";
-        FILE *file;
-
-        file = fmemopen(sstream,
-                        (strlen(sstream) + 1) * sizeof(*sstream),
-                        "r");
-        if (file == NULL)
+        if ((sgl = test_prepare_sgl_content(sstream, strlen(sstream) + 1)) == NULL)
             goto failed;
 
-        if (skip_dict_unknown_value(file) != ERR_NO ||
-            fgetc(file) != 'x')
-        {
+        if (skip_dict_unknown_value(sgl) != ERR_NO)
             goto failed;
-        }
 
-        fclose(file);
+        if ((pdf_get_char(sgl, &c)) != ERR_NO || c != 'x')
+            goto failed;
+
+        sigil_free(&sgl);
     }
 
     print_test_result(1, verbosity);
@@ -499,29 +692,19 @@ int sigil_auxiliary_self_test(int verbosity)
     print_test_item("fn parse_number", verbosity);
 
     {
-        char *sstream = "0123456789    42";
         size_t result = 0;
-        FILE *file;
 
-        file = fmemopen(sstream,
-                        (strlen(sstream) + 1) * sizeof(*sstream),
-                        "r");
-        if (file == NULL)
+        char *sstream = "0123456789    42";
+        if ((sgl = test_prepare_sgl_content(sstream, strlen(sstream) + 1)) == NULL)
             goto failed;
 
-        if (parse_number(file, &result) != ERR_NO ||
-            result != 123456789)
-        {
+        if (parse_number(sgl, &result) != ERR_NO || result != 123456789)
             goto failed;
-        }
 
-        if (parse_number(file, &result) != ERR_NO ||
-            result != 42)
-        {
+        if (parse_number(sgl, &result) != ERR_NO || result != 42)
             goto failed;
-        }
 
-        fclose(file);
+        sigil_free(&sgl);
     }
 
     print_test_result(1, verbosity);
@@ -530,29 +713,19 @@ int sigil_auxiliary_self_test(int verbosity)
     print_test_item("fn parse_keyword", verbosity);
 
     {
-        char *sstream = " xref \n trailer";
         keyword_t result;
-        FILE *file;
 
-        file = fmemopen(sstream,
-                        (strlen(sstream) + 1) * sizeof(*sstream),
-                        "r");
-        if (file == NULL)
+        char *sstream = " xref \n trailer";
+        if ((sgl = test_prepare_sgl_content(sstream, strlen(sstream) + 1)) == NULL)
             goto failed;
 
-        if (parse_keyword(file, &result) != ERR_NO ||
-            result != KEYWORD_xref)
-        {
+        if (parse_keyword(sgl, &result) != ERR_NO || result != KEYWORD_xref)
             goto failed;
-        }
 
-        if (parse_keyword(file, &result) != ERR_NO ||
-            result != KEYWORD_trailer)
-        {
+        if (parse_keyword(sgl, &result) != ERR_NO || result != KEYWORD_trailer)
             goto failed;
-        }
 
-        fclose(file);
+        sigil_free(&sgl);
     }
 
     print_test_result(1, verbosity);
@@ -561,29 +734,19 @@ int sigil_auxiliary_self_test(int verbosity)
     print_test_item("fn parse_free_indicator", verbosity);
 
     {
-        char *sstream = " f n";
         free_indicator_t result;
-        FILE *file;
 
-        file = fmemopen(sstream,
-                        (strlen(sstream) + 1) * sizeof(*sstream),
-                        "r");
-        if (file == NULL)
+        char *sstream = " f n";
+        if ((sgl = test_prepare_sgl_content(sstream, strlen(sstream) + 1)) == NULL)
             goto failed;
 
-        if (parse_free_indicator(file, &result) != ERR_NO ||
-            result != FREE_ENTRY)
-        {
+        if (parse_free_indicator(sgl, &result) != ERR_NO || result != FREE_ENTRY)
             goto failed;
-        }
 
-        if (parse_free_indicator(file, &result) != ERR_NO ||
-            result != IN_USE_ENTRY)
-        {
+        if (parse_free_indicator(sgl, &result) != ERR_NO || result != IN_USE_ENTRY)
             goto failed;
-        }
 
-        fclose(file);
+        sigil_free(&sgl);
     }
 
     print_test_result(1, verbosity);
@@ -593,7 +756,11 @@ int sigil_auxiliary_self_test(int verbosity)
     return 0;
 
 failed:
+    if (sgl)
+        sigil_free(&sgl);
+
     print_test_result(0, verbosity);
     print_module_result(0, verbosity);
+
     return 1;
 }

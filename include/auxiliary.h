@@ -14,15 +14,22 @@ void sigil_zeroize(void *a, size_t bytes);
 int is_digit(const char_t c);
 int is_whitespace(const char_t c);
 
-sigil_err_t skip_leading_whitespaces(FILE *in);
-sigil_err_t skip_dictionary(FILE *in);
-sigil_err_t skip_dict_unknown_value(FILE *in);
+sigil_err_t pdf_read(sigil_t *sgl, size_t size, char *result, size_t *res_size);
+sigil_err_t pdf_get_char(sigil_t *sgl, char *result);
+sigil_err_t pdf_peek_char(sigil_t *sgl, char *result);
 
-sigil_err_t parse_number(FILE *in, size_t *number);
-sigil_err_t parse_keyword(FILE *in, keyword_t *keyword);
-sigil_err_t parse_free_indicator(FILE *in, free_indicator_t *result);
-sigil_err_t parse_indirect_reference(FILE *in, reference_t *ref);
-sigil_err_t parse_dict_key(FILE *in, dict_key_t *dict_key);
+sigil_err_t pdf_move_pos_rel(sigil_t *sgl, ssize_t shift_bytes);
+sigil_err_t pdf_move_pos_abs(sigil_t *sgl, size_t position);
+
+sigil_err_t skip_leading_whitespaces(sigil_t *sgl);
+sigil_err_t skip_dictionary(sigil_t *sgl);
+sigil_err_t skip_dict_unknown_value(sigil_t *sgl);
+
+sigil_err_t parse_number(sigil_t *sgl, size_t *number);
+sigil_err_t parse_keyword(sigil_t *sgl, keyword_t *keyword);
+sigil_err_t parse_free_indicator(sigil_t *sgl, free_indicator_t *result);
+sigil_err_t parse_indirect_reference(sigil_t *sgl, reference_t *ref);
+sigil_err_t parse_dict_key(sigil_t *sgl, dict_key_t *dict_key);
 
 const char *sigil_err_string(sigil_err_t err);
 
@@ -30,6 +37,9 @@ void print_module_name(const char *module_name, int verbosity);
 void print_module_result(int result, int verbosity);
 void print_test_item(const char *test_name, int verbosity);
 void print_test_result(int result, int verbosity);
+
+sigil_t *test_prepare_sgl_content(char *content, size_t size);
+sigil_t *test_prepare_sgl_path(const char *path);
 
 int sigil_auxiliary_self_test(int verbosity);
 
