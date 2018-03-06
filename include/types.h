@@ -4,8 +4,6 @@
 #include <stdint.h> // uint32_t
 
 
-typedef unsigned char char_t;
-
 typedef uint32_t sigil_err_t;
 
 typedef uint32_t keyword_t;

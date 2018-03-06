@@ -17,12 +17,12 @@ void sigil_zeroize(void *a, size_t bytes)
     }
 }
 
-int is_digit(const char_t c)
+int is_digit(const char c)
 {
     return (c >= '0' && c <= '9');
 }
 
-int is_whitespace(const char_t c)
+int is_whitespace(const char c)
 {
     return (c == 0x00 || // null
             c == 0x09 || // horizontal tab
@@ -568,7 +568,7 @@ int sigil_auxiliary_self_test(int verbosity)
     // TEST: fn sigil_zeroize
     print_test_item("fn sigil_zeroize", verbosity);
 
-    char_t array[5];
+    char array[5];
     for (int i = 0; i < 5; i++) {
         array[i] = 1;
     }

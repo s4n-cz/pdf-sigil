@@ -11,8 +11,8 @@
 // Shouldn't be optimized out by the compiler
 void sigil_zeroize(void *a, size_t bytes);
 
-int is_digit(const char_t c);
-int is_whitespace(const char_t c);
+int is_digit(const char c);
+int is_whitespace(const char c);
 
 sigil_err_t pdf_read(sigil_t *sgl, size_t size, char *result, size_t *res_size);
 sigil_err_t pdf_get_char(sigil_t *sgl, char *result);
