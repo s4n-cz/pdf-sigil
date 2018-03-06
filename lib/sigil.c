@@ -57,7 +57,7 @@ sigil_err_t sigil_set_pdf_file(sigil_t *sgl, FILE *pdf_file)
         return ERR_IO;
 
     // - 2) read current position
-    sgl->pdf_data.size = ftell(sgl->pdf_data.file);
+    sgl->pdf_data.size = ftell(sgl->pdf_data.file) - 1;
     if (sgl->pdf_data.size < 0)
         return ERR_IO;
 
@@ -95,8 +95,39 @@ sigil_err_t sigil_set_pdf_path(sigil_t *sgl, const char *path_to_pdf)
 
     FILE *pdf_file = NULL;
 
-    if ((pdf_file = fopen(path_to_pdf, "r")) == NULL)
-        return ERR_IO;
+    #ifdef _WIN32
+        // convert path to wchar_t
+        size_t out_size;
+        size_t path_len;
+        wchar_t *path_to_pdf_win;
+
+        path_len = strlen(path_to_pdf) + 1;
+        path_to_pdf_win = malloc(path_len * sizeof(wchar_t));
+        if (path_to_pdf_win == NULL)
+            return ERR_ALLOCATION;
+        sigil_zeroize(path_to_pdf_win, path_len * sizeof(wchar_t));
+        if (mbstowcs_s(&out_size,       // out ... characters converted
+                       path_to_pdf_win, // out ... converted string
+                       path_len,        // in  ... size of path_to_pdf_win
+                       path_to_pdf,     // in  ... input string
+                       path_len - 1     // in  ... max wide chars to store
+           ) != 0)
+        {
+            free(path_to_pdf_win);
+            return ERR_IO;
+        }
+
+        if (_wfopen_s(&pdf_file, path_to_pdf_win, L"rb") != 0) {
+            free(path_to_pdf_win);
+            return ERR_IO;
+        }
+
+        free(path_to_pdf_win);
+    #else
+        if ((pdf_file = fopen(path_to_pdf, "rb")) == NULL)
+            return ERR_IO;
+    #endif
+
     sgl->pdf_data.deallocation_info |= DEALLOCATE_FILE;
 
     return sigil_set_pdf_file(sgl, pdf_file);

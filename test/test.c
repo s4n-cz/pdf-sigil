@@ -20,7 +20,7 @@ static void print_usage(const char *prog)
 
 int main(int argc, char **argv)
 {
-    int verbosity = 1,
+    int verbosity = 2,
         failed    = 0;
 
     if (argc == 2) {
