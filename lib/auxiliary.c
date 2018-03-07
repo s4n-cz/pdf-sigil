@@ -4,6 +4,9 @@
 #include "constants.h"
 #include "sigil.h"
 
+#define KEYWORD_MAX    10
+#define DICT_KEY_MAX   10
+
 
 void sigil_zeroize(void *a, size_t bytes)
 {
@@ -89,7 +92,7 @@ sigil_err_t pdf_get_char(sigil_t *sgl, char *result)
     }
 
     if (sgl->pdf_data.file != NULL) {
-        *result = getc(sgl->pdf_data.file);
+        *result = (char)getc(sgl->pdf_data.file);
         if (*result == EOF)
             return ERR_NO_DATA;
         return ERR_NO;
@@ -141,7 +144,7 @@ sigil_err_t pdf_move_pos_rel(sigil_t *sgl, ssize_t shift_bytes)
             final_position = sgl->pdf_data.size - 1;
         }
 
-        sgl->pdf_data.buf_pos = final_position;
+        sgl->pdf_data.buf_pos = (size_t)final_position;
 
         return ERR_NO;
     }
@@ -298,11 +301,10 @@ sigil_err_t parse_keyword(sigil_t *sgl, keyword_t *keyword)
 {
     sigil_err_t err;
     int count = 0;
-    const int keyword_max = 10;
-    char tmp[keyword_max],
+    char tmp[KEYWORD_MAX],
          c;
 
-    sigil_zeroize(tmp, keyword_max * sizeof(*tmp));
+    sigil_zeroize(tmp, KEYWORD_MAX * sizeof(*tmp));
 
     err = skip_leading_whitespaces(sgl);
     if (err != ERR_NO)
@@ -314,7 +316,7 @@ sigil_err_t parse_keyword(sigil_t *sgl, keyword_t *keyword)
                 return ERR_PDF_CONTENT;
             break;
         } else {
-            if (count >= keyword_max - 1)
+            if (count >= KEYWORD_MAX - 1)
                 return ERR_PDF_CONTENT;
             tmp[count++] = c;
         }
@@ -394,12 +396,11 @@ sigil_err_t parse_indirect_reference(sigil_t *sgl, reference_t *ref)
 sigil_err_t parse_dict_key(sigil_t *sgl, dict_key_t *dict_key)
 {
     sigil_err_t err;
-    const int dict_key_max = 10;
     int count = 0;
-    char tmp[dict_key_max],
+    char tmp[DICT_KEY_MAX],
          c;
 
-    sigil_zeroize(tmp, dict_key_max * sizeof(*tmp));
+    sigil_zeroize(tmp, DICT_KEY_MAX * sizeof(*tmp));
 
     err = skip_leading_whitespaces(sgl);
     if (err != ERR_NO)
@@ -431,7 +432,7 @@ sigil_err_t parse_dict_key(sigil_t *sgl, dict_key_t *dict_key)
                 return ERR_PDF_CONTENT;
             break;
         } else {
-            if (count >= dict_key_max - 1)
+            if (count >= DICT_KEY_MAX - 1)
                 return ERR_PDF_CONTENT;
             tmp[count++] = c;
         }

@@ -336,6 +336,7 @@ int sigil_xref_self_test(int verbosity)
 
     // all tests done
     print_module_result(1, verbosity);
+
     return 0;
 
 failed:

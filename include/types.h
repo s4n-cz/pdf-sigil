@@ -4,6 +4,11 @@
 #include <stdint.h> // uint32_t
 
 
+#ifdef _WIN32
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t
+#endif
+
 typedef uint32_t sigil_err_t;
 
 typedef uint32_t keyword_t;

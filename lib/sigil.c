@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "auxiliary.h"
 #include "config.h"
 #include "constants.h"
@@ -57,7 +58,7 @@ sigil_err_t sigil_set_pdf_file(sigil_t *sgl, FILE *pdf_file)
         return ERR_IO;
 
     // - 2) read current position
-    sgl->pdf_data.size = ftell(sgl->pdf_data.file) - 1;
+    sgl->pdf_data.size = (size_t)(ftell(sgl->pdf_data.file) - 1);
     if (sgl->pdf_data.size < 0)
         return ERR_IO;
 
@@ -233,6 +234,7 @@ int sigil_sigil_self_test(int verbosity)
 
     // all tests done
     print_module_result(1, verbosity);
+
     return 0;
 
 failed:
@@ -241,5 +243,6 @@ failed:
 
     print_test_result(0, verbosity);
     print_module_result(0, verbosity);
+
     return 1;
 }

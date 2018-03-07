@@ -50,8 +50,8 @@ sigil_err_t process_header(sigil_t *sgl)
             if ((pdf_x == 1 && pdf_y >= 0 && pdf_y <= 7) ||
                 (pdf_x == 2 && pdf_y == 0))
             {
-                sgl->pdf_x = pdf_x;
-                sgl->pdf_y = pdf_y;
+                sgl->pdf_x = (short)pdf_x;
+                sgl->pdf_y = (short)pdf_y;
             } else {
                 return ERR_PDF_CONTENT;
             }
