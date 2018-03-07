@@ -2,9 +2,15 @@
 #define PDF_SIGIL_CONSTANTS_H
 
 
-#define COLOR_RED          "\x1b[31m"
-#define COLOR_GREEN        "\x1b[32m"
-#define COLOR_RESET        "\x1b[0m"
+#ifdef __unix__
+    #define COLOR_RED          "\x1b[31m"
+    #define COLOR_GREEN        "\x1b[32m"
+    #define COLOR_RESET        "\x1b[0m"
+#else
+    #define COLOR_RED          ""
+    #define COLOR_GREEN        ""
+    #define COLOR_RESET        ""
+#endif
 
 #define KEYWORD_UNSET      0
 #define KEYWORD_xref       1

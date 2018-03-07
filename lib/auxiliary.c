@@ -35,14 +35,15 @@ int is_whitespace(const char c)
             c == 0x20);  // space
 }
 
-// writes size bytes of data + 1 byte of null terminator to result
+// reads size bytes of data + 1 char of null terminator into result
 // res_size is just the number of read bytes, without the terminating null
 sigil_err_t pdf_read(sigil_t *sgl, size_t size, char *result, size_t *res_size)
 {
     size_t read_size;
-    size_t items_processed;
+    size_t processed,
+           total_processed;
 
-    if (sgl == NULL || size <= 0 || result == NULL || res_size == NULL)
+    if (sgl == NULL || size == 0 || result == NULL || res_size == NULL)
         return ERR_PARAMETER;
 
     if (sgl->pdf_data.buffer != NULL) {
@@ -64,13 +65,18 @@ sigil_err_t pdf_read(sigil_t *sgl, size_t size, char *result, size_t *res_size)
     }
 
     if (sgl->pdf_data.file != NULL) {
-        items_processed = fread(result, size, sizeof(char), sgl->pdf_data.file);
-        if (items_processed <= 0 || items_processed > size)
-            return ERR_IO;
-        read_size = items_processed * sizeof(char);
-        result[read_size] = '\0';
+        total_processed = 0;
 
-        *res_size = read_size;
+        while (total_processed < size) {
+            processed = fread(result + total_processed, sizeof(char), size,
+                              sgl->pdf_data.file);
+            total_processed += processed;
+            if (processed <= 0 || total_processed * sizeof(char) > size)
+                return ERR_IO;
+        }
+        result[total_processed] = '\0';
+
+        *res_size = total_processed;
 
         return ERR_NO;
     }
@@ -140,7 +146,7 @@ sigil_err_t pdf_move_pos_rel(sigil_t *sgl, ssize_t shift_bytes)
         final_position = sgl->pdf_data.buf_pos + shift_bytes;
         if (final_position < 0) {
             final_position = 0;
-        } else if (final_position > sgl->pdf_data.size - 1) {
+        } else if ((size_t)final_position > sgl->pdf_data.size - 1) {
             final_position = sgl->pdf_data.size - 1;
         }
 

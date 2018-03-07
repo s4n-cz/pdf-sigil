@@ -103,7 +103,7 @@ void xref_free(xref_t *xref)
         return;
 
     if (xref->entry != NULL) {
-        for (int i = 0; i < xref->capacity; i++) {
+        for (size_t i = 0; i < xref->capacity; i++) {
             free_xref_entry(xref->entry[i]);
         }
         free(xref->entry);
@@ -198,7 +198,7 @@ sigil_err_t read_xref_table(sigil_t *sgl)
                 return 1;
 
             // for all entries in one section
-            for (int section_offset = 0; section_offset < section_cnt; section_offset++) {
+            for (size_t section_offset = 0; section_offset < section_cnt; section_offset++) {
                 err = parse_number(sgl, &obj_offset);
                 if (err != ERR_NO)
                     return err;
@@ -254,9 +254,9 @@ void print_xref(xref_t *xref)
         return;
 
     printf("\nXREF\n");
-    for (int i = 0; i < xref->capacity; i++) {
+    for (size_t i = 0; i < xref->capacity; i++) {
         if (xref->entry[i] != NULL)
-            printf("obj %d | offset %zd | generation %zd\n", i, xref->entry[i]->byte_offset, xref->entry[i]->generation_num);
+            printf("obj %zd | offset %zd | generation %zd\n", i, xref->entry[i]->byte_offset, xref->entry[i]->generation_num);
     }
 }
 

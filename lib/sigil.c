@@ -41,7 +41,8 @@ sigil_err_t sigil_init(sigil_t **sgl)
 
 sigil_err_t sigil_set_pdf_file(sigil_t *sgl, FILE *pdf_file)
 {
-    size_t processed = 0;
+    size_t processed,
+           total_processed;
     char *content = NULL;
 
     if (sgl == NULL || pdf_file == NULL)
@@ -73,14 +74,28 @@ sigil_err_t sigil_set_pdf_file(sigil_t *sgl, FILE *pdf_file)
             return ERR_NO;
         }
 
-        processed = fread(content, sgl->pdf_data.size,
-                          sizeof(char), sgl->pdf_data.file);
-        if (processed != sgl->pdf_data.size) {
+        total_processed = 0;
+
+        while (total_processed * sizeof(char) < sgl->pdf_data.size) {
+            processed = fread(content + total_processed, sizeof(char),
+                              sgl->pdf_data.size, sgl->pdf_data.file);
+            total_processed += processed;
+            if (processed <= 0 ||
+                total_processed * sizeof(char) > sgl->pdf_data.size)
+            {
+                // fallback to using the file
+                free(content);
+                return ERR_NO;
+            }
+        }
+
+        if (total_processed * sizeof(char) != sgl->pdf_data.size) {
             // fallback to using the file
             free(content);
             return ERR_NO;
         }
-        content[processed] = '\0';
+
+        content[total_processed] = '\0';
 
         sgl->pdf_data.buffer = content;
         sgl->pdf_data.deallocation_info |= DEALLOCATE_BUFFER;
