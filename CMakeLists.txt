@@ -19,20 +19,17 @@ add_library(pdf-sigil_shared SHARED ${LIB_SRC})
 add_executable(selftest ${TEST_SRC})
 target_link_libraries(selftest pdf-sigil_static)
 
-# libraries and selftest into "build" directory
-set_target_properties(pdf-sigil_static pdf-sigil_shared selftest
-    PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build"
-)
+# running selftest
+add_custom_target(run_tests ALL
+    COMMAND selftest
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_custom_target(selftest_verbose
+add_custom_target(run_tests_verbose
     COMMAND selftest --verbose
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-add_custom_target(selftest_quiet
+add_custom_target(run_tests_quiet
     COMMAND selftest --quiet
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )

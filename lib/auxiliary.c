@@ -561,21 +561,6 @@ int sigil_auxiliary_self_test(int verbosity)
 
     print_module_name("auxiliary", verbosity);
 
-    // TEST: UTF-8 filepath support
-    print_test_item("UTF-8 filepath support", verbosity);
-
-    {
-        if ((sgl = test_prepare_sgl_path("test/utf-8_test_€䪜勁𠹹")) == NULL)
-            goto failed;
-
-        if ((pdf_get_char(sgl, &c)) != ERR_NO || c != 'x')
-            goto failed;
-
-        sigil_free(&sgl);
-    }
-
-    print_test_result(1, verbosity);
-
     // TEST: MIN and MAX macros
     print_test_item("MIN, MAX", verbosity);
 
@@ -766,6 +751,21 @@ int sigil_auxiliary_self_test(int verbosity)
             goto failed;
 
         if (parse_free_indicator(sgl, &result) != ERR_NO || result != IN_USE_ENTRY)
+            goto failed;
+
+        sigil_free(&sgl);
+    }
+
+    print_test_result(1, verbosity);
+
+    // TEST: UTF-8 filepath support
+    print_test_item("UTF-8 filepath support", verbosity);
+
+    {
+        if ((sgl = test_prepare_sgl_path("test/utf-8_test_€䪜勁𠹹")) == NULL)
+            goto failed;
+
+        if ((pdf_get_char(sgl, &c)) != ERR_NO || c != 'x')
             goto failed;
 
         sigil_free(&sgl);
