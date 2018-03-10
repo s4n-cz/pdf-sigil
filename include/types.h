@@ -2,15 +2,17 @@
 #define PDF_SIGIL_TYPES_H
 
 #include <stdint.h> // uint32_t
+#include <stdio.h>
 
 
-typedef unsigned char char_t;
+#ifdef _WIN32
+    #include <BaseTsd.h>
+    typedef SSIZE_T ssize_t;
+#endif
 
 typedef uint32_t sigil_err_t;
 
 typedef uint32_t keyword_t;
-
-typedef uint32_t free_indicator_t;
 
 typedef uint32_t dict_key_t;
 
@@ -19,9 +21,10 @@ typedef struct {
     size_t generation_num;
 } reference_t;
 
-typedef struct {
+typedef struct xref_entry_t {
     size_t byte_offset;
     size_t generation_num;
+    struct xref_entry_t *next;
 } xref_entry_t;
 
 typedef struct {

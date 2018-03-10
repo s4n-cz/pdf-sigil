@@ -44,5 +44,6 @@ int sigil_config_self_test(int verbosity)
 failed:
     print_test_result(0, verbosity);
     print_module_result(0, verbosity);
+
     return 1;
 }

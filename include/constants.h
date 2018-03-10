@@ -2,20 +2,20 @@
 #define PDF_SIGIL_CONSTANTS_H
 
 
-#define COLOR_RED          "\x1b[31m"
-#define COLOR_GREEN        "\x1b[32m"
-#define COLOR_RESET        "\x1b[0m"
+#ifdef __unix__
+    #define COLOR_RED          "\x1b[31m"
+    #define COLOR_GREEN        "\x1b[32m"
+    #define COLOR_RESET        "\x1b[0m"
+#else
+    #define COLOR_RED          ""
+    #define COLOR_GREEN        ""
+    #define COLOR_RESET        ""
+#endif
 
-#define KEYWORD_UNSET      0
-#define KEYWORD_xref       1
-#define KEYWORD_trailer    2
 
 #define XREF_TYPE_UNSET    0
 #define XREF_TYPE_TABLE    1
 #define XREF_TYPE_STREAM   2
-
-#define IN_USE_ENTRY       0
-#define FREE_ENTRY         1
 
 #define DICT_KEY_UNKNOWN   0
 #define DICT_KEY_Size      1

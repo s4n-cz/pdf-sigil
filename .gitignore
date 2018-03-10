@@ -59,3 +59,6 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+# Editor files
+.idea
+cmake-build-debug

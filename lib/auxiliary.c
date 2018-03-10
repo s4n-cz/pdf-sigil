@@ -4,6 +4,8 @@
 #include "constants.h"
 #include "sigil.h"
 
+#define DICT_KEY_MAX   10
+
 
 void sigil_zeroize(void *a, size_t bytes)
 {
@@ -17,12 +19,12 @@ void sigil_zeroize(void *a, size_t bytes)
     }
 }
 
-int is_digit(const char_t c)
+int is_digit(const char c)
 {
     return (c >= '0' && c <= '9');
 }
 
-int is_whitespace(const char_t c)
+int is_whitespace(const char c)
 {
     return (c == 0x00 || // null
             c == 0x09 || // horizontal tab
@@ -32,14 +34,15 @@ int is_whitespace(const char_t c)
             c == 0x20);  // space
 }
 
-// writes size bytes of data + 1 byte of null terminator to result
+// reads size bytes of data + 1 char of null terminator into result
 // res_size is just the number of read bytes, without the terminating null
 sigil_err_t pdf_read(sigil_t *sgl, size_t size, char *result, size_t *res_size)
 {
     size_t read_size;
-    size_t items_processed;
+    size_t processed,
+           total_processed;
 
-    if (sgl == NULL || size <= 0 || result == NULL || res_size == NULL)
+    if (sgl == NULL || size == 0 || result == NULL || res_size == NULL)
         return ERR_PARAMETER;
 
     if (sgl->pdf_data.buffer != NULL) {
@@ -61,13 +64,18 @@ sigil_err_t pdf_read(sigil_t *sgl, size_t size, char *result, size_t *res_size)
     }
 
     if (sgl->pdf_data.file != NULL) {
-        items_processed = fread(result, size, sizeof(char), sgl->pdf_data.file);
-        if (items_processed <= 0 || items_processed > size)
-            return ERR_IO;
-        read_size = items_processed * sizeof(char);
-        result[read_size] = '\0';
+        total_processed = 0;
 
-        *res_size = read_size;
+        while (total_processed < size) {
+            processed = fread(result + total_processed, sizeof(char), size,
+                              sgl->pdf_data.file);
+            total_processed += processed;
+            if (processed <= 0 || total_processed * sizeof(char) > size)
+                return ERR_IO;
+        }
+        result[total_processed] = '\0';
+
+        *res_size = total_processed;
 
         return ERR_NO;
     }
@@ -89,7 +97,7 @@ sigil_err_t pdf_get_char(sigil_t *sgl, char *result)
     }
 
     if (sgl->pdf_data.file != NULL) {
-        *result = getc(sgl->pdf_data.file);
+        *result = (char)getc(sgl->pdf_data.file);
         if (*result == EOF)
             return ERR_NO_DATA;
         return ERR_NO;
@@ -137,11 +145,11 @@ sigil_err_t pdf_move_pos_rel(sigil_t *sgl, ssize_t shift_bytes)
         final_position = sgl->pdf_data.buf_pos + shift_bytes;
         if (final_position < 0) {
             final_position = 0;
-        } else if (final_position > sgl->pdf_data.size - 1) {
+        } else if ((size_t)final_position > sgl->pdf_data.size - 1) {
             final_position = sgl->pdf_data.size - 1;
         }
 
-        sgl->pdf_data.buf_pos = final_position;
+        sgl->pdf_data.buf_pos = (size_t)final_position;
 
         return ERR_NO;
     }
@@ -200,6 +208,30 @@ sigil_err_t skip_leading_whitespaces(sigil_t *sgl)
     return err;
 }
 
+sigil_err_t skip_array(sigil_t *sgl)
+{
+    sigil_err_t err;
+    char c;
+
+    while((err = pdf_get_char(sgl, &c)) == ERR_NO) {
+        switch (c) {
+            case '[':
+                err = skip_array(sgl);
+                if (err != ERR_NO)
+                    return err;
+                break;
+            case ']':
+                return ERR_NO;
+            case EOF:
+                return ERR_PDF_CONTENT;
+            default:
+                break;
+        }
+    }
+
+    return err;
+}
+
 // without leading "<<"
 sigil_err_t skip_dictionary(sigil_t *sgl)
 {
@@ -226,6 +258,8 @@ sigil_err_t skip_dictionary(sigil_t *sgl)
                 if ((err = skip_dictionary(sgl)) != ERR_NO)
                     return err;
                 break;
+            case EOF:
+                return ERR_PDF_CONTENT;
             default:
                 break;
         }
@@ -243,6 +277,12 @@ sigil_err_t skip_dict_unknown_value(sigil_t *sgl)
         switch (c) {
             case '/':
                 return ERR_NO;
+            case '[':
+                if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NO)
+                    return err;
+                if ((err = skip_array(sgl)) != ERR_NO)
+                    return err;
+                return ERR_NO;
             case '<':
                 if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NO)
                     return err;
@@ -253,7 +293,11 @@ sigil_err_t skip_dict_unknown_value(sigil_t *sgl)
                 if ((err = skip_dictionary(sgl)) != ERR_NO)
                     return err;
                 return ERR_NO;
+            case EOF:
+                return ERR_PDF_CONTENT;
             default:
+                if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NO)
+                    return err;
                 break;
         }
     }
@@ -294,79 +338,40 @@ sigil_err_t parse_number(sigil_t *sgl, size_t *number)
     return err;
 }
 
-sigil_err_t parse_keyword(sigil_t *sgl, keyword_t *keyword)
+sigil_err_t parse_word(sigil_t *sgl, const char *word)
 {
     sigil_err_t err;
-    int count = 0;
-    const int keyword_max = 10;
-    char tmp[keyword_max],
-         c;
+    size_t length;
+    char c;
 
-    sigil_zeroize(tmp, keyword_max * sizeof(*tmp));
+    if (sgl == NULL || word == NULL)
+        return ERR_PARAMETER;
 
     err = skip_leading_whitespaces(sgl);
     if (err != ERR_NO)
         return err;
 
-    while ((err = pdf_peek_char(sgl, &c)) == ERR_NO) {
-        if (is_whitespace(c)) {
-            if (count <= 0)
-                return ERR_PDF_CONTENT;
-            break;
-        } else {
-            if (count >= keyword_max - 1)
-                return ERR_PDF_CONTENT;
-            tmp[count++] = c;
-        }
+    length = strlen(word);
 
-        if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NO)
+    for (size_t pos = 0; pos < length; pos++) {
+        err = pdf_peek_char(sgl, &c);
+        if (err != ERR_NO)
+            return err;
+
+        if (c != word[pos])
+            return ERR_PDF_CONTENT;
+
+        err = pdf_move_pos_rel(sgl, 1);
+        if (err != ERR_NO)
             return err;
     }
 
-    if (err != ERR_NO)
-        return err;
-
-    if (strncmp(tmp, "xref", 4) == 0) {
-        *keyword = KEYWORD_xref;
-        return ERR_NO;
-    }
-    if (strncmp(tmp, "trailer", 7) == 0) {
-        *keyword = KEYWORD_trailer;
-        return ERR_NO;
-    }
-
-    return ERR_PDF_CONTENT;
-}
-
-sigil_err_t parse_free_indicator(sigil_t *sgl, free_indicator_t *result)
-{
-    sigil_err_t err;
-    char c;
-
-    err = skip_leading_whitespaces(sgl);
-    if (err != ERR_NO)
-        return err;
-
-    err = pdf_get_char(sgl, &c);
-    if (err != ERR_NO)
-        return err;
-
-    switch(c) {
-        case 'f':
-            *result = FREE_ENTRY;
-            return ERR_NO;
-        case 'n':
-            *result = IN_USE_ENTRY;
-            return ERR_NO;
-        default:
-            return ERR_PDF_CONTENT;
-    }
+    return ERR_NO;
 }
 
 sigil_err_t parse_indirect_reference(sigil_t *sgl, reference_t *ref)
 {
     sigil_err_t err;
-    char c;
 
     err = parse_number(sgl, &ref->object_num);
     if (err != ERR_NO)
@@ -376,16 +381,9 @@ sigil_err_t parse_indirect_reference(sigil_t *sgl, reference_t *ref)
     if (err != ERR_NO)
         return err;
 
-    err = skip_leading_whitespaces(sgl);
+    err = parse_word(sgl, "R");
     if (err != ERR_NO)
         return err;
-
-    err = pdf_get_char(sgl, &c);
-    if (err != ERR_NO)
-        return err;
-
-    if (c != 'R')
-        return ERR_PDF_CONTENT;
 
     return ERR_NO;
 }
@@ -394,36 +392,18 @@ sigil_err_t parse_indirect_reference(sigil_t *sgl, reference_t *ref)
 sigil_err_t parse_dict_key(sigil_t *sgl, dict_key_t *dict_key)
 {
     sigil_err_t err;
-    const int dict_key_max = 10;
     int count = 0;
-    char tmp[dict_key_max],
+    char tmp[DICT_KEY_MAX],
          c;
 
-    sigil_zeroize(tmp, dict_key_max * sizeof(*tmp));
+    sigil_zeroize(tmp, DICT_KEY_MAX * sizeof(*tmp));
 
-    err = skip_leading_whitespaces(sgl);
+    if (parse_word(sgl, ">>") == ERR_NO)
+        return ERR_END_OF_DICT;
+
+    err = parse_word(sgl, "/");
     if (err != ERR_NO)
         return err;
-
-    err = pdf_peek_char(sgl, &c);
-    if (err != ERR_NO)
-        return err;
-
-    switch (c) {
-        case '/':
-            break;
-        case '>': // test end of dictionary
-            if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NO)
-                return err;
-            if ((err = pdf_get_char(sgl, &c)) != ERR_NO)
-                return err;
-            if (c != '>')
-                return ERR_PDF_CONTENT;
-            return ERR_END_OF_DICT;
-        default:
-            return ERR_PDF_CONTENT;
-    }
-
 
     while ((err = pdf_peek_char(sgl, &c)) == ERR_NO) {
         if (is_whitespace(c)) {
@@ -431,7 +411,7 @@ sigil_err_t parse_dict_key(sigil_t *sgl, dict_key_t *dict_key)
                 return ERR_PDF_CONTENT;
             break;
         } else {
-            if (count >= dict_key_max - 1)
+            if (count >= DICT_KEY_MAX - 1)
                 return ERR_PDF_CONTENT;
             tmp[count++] = c;
         }
@@ -568,7 +548,7 @@ int sigil_auxiliary_self_test(int verbosity)
     // TEST: fn sigil_zeroize
     print_test_item("fn sigil_zeroize", verbosity);
 
-    char_t array[5];
+    char array[5];
     for (int i = 0; i < 5; i++) {
         array[i] = 1;
     }
@@ -611,6 +591,31 @@ int sigil_auxiliary_self_test(int verbosity)
         !is_whitespace(0x20) || is_whitespace('_' ) )
     {
         goto failed;
+    }
+
+    print_test_result(1, verbosity);
+
+    // TEST: fn pdf_read
+    print_test_item("fn pdf_read", verbosity);
+
+    {
+        char output[6];
+        size_t output_size;
+
+        char *sstream = "abbbcx";
+        if ((sgl = test_prepare_sgl_content(sstream, strlen(sstream) + 1)) == NULL)
+            goto failed;
+
+        if (pdf_read(sgl, 5, output, &output_size) != ERR_NO ||
+            output_size != 5 || strncmp(sstream, output, 5) != 0)
+        {
+            goto failed;
+        }
+
+        if ((pdf_get_char(sgl, &c)) != ERR_NO || c != 'x')
+            goto failed;
+
+        sigil_free(&sgl);
     }
 
     print_test_result(1, verbosity);
@@ -709,41 +714,17 @@ int sigil_auxiliary_self_test(int verbosity)
 
     print_test_result(1, verbosity);
 
-    // TEST: fn parse_keyword
-    print_test_item("fn parse_keyword", verbosity);
+    // TEST: UTF-8 filepath support
+    print_test_item("UTF-8 filepath support", verbosity);
 
     {
-        keyword_t result;
-
-        char *sstream = " xref \n trailer";
-        if ((sgl = test_prepare_sgl_content(sstream, strlen(sstream) + 1)) == NULL)
+        if ((sgl = test_prepare_sgl_path("test/utf-8_test_\xe2\x82\xac\xe4\xaa"\
+            "\x9c\xe5\x8b\x81\xf0\xa0\xb9\xb9")) == NULL)
+        {
             goto failed;
+        }
 
-        if (parse_keyword(sgl, &result) != ERR_NO || result != KEYWORD_xref)
-            goto failed;
-
-        if (parse_keyword(sgl, &result) != ERR_NO || result != KEYWORD_trailer)
-            goto failed;
-
-        sigil_free(&sgl);
-    }
-
-    print_test_result(1, verbosity);
-
-    // TEST: fn parse_free_indicator
-    print_test_item("fn parse_free_indicator", verbosity);
-
-    {
-        free_indicator_t result;
-
-        char *sstream = " f n";
-        if ((sgl = test_prepare_sgl_content(sstream, strlen(sstream) + 1)) == NULL)
-            goto failed;
-
-        if (parse_free_indicator(sgl, &result) != ERR_NO || result != FREE_ENTRY)
-            goto failed;
-
-        if (parse_free_indicator(sgl, &result) != ERR_NO || result != IN_USE_ENTRY)
+        if ((pdf_get_char(sgl, &c)) != ERR_NO || c != 'x')
             goto failed;
 
         sigil_free(&sgl);

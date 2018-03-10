@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "auxiliary.h"
 #include "config.h"
 #include "constants.h"
@@ -40,7 +41,8 @@ sigil_err_t sigil_init(sigil_t **sgl)
 
 sigil_err_t sigil_set_pdf_file(sigil_t *sgl, FILE *pdf_file)
 {
-    size_t processed = 0;
+    size_t processed,
+           total_processed;
     char *content = NULL;
 
     if (sgl == NULL || pdf_file == NULL)
@@ -57,7 +59,7 @@ sigil_err_t sigil_set_pdf_file(sigil_t *sgl, FILE *pdf_file)
         return ERR_IO;
 
     // - 2) read current position
-    sgl->pdf_data.size = ftell(sgl->pdf_data.file);
+    sgl->pdf_data.size = (size_t)(ftell(sgl->pdf_data.file) - 1);
     if (sgl->pdf_data.size < 0)
         return ERR_IO;
 
@@ -72,14 +74,28 @@ sigil_err_t sigil_set_pdf_file(sigil_t *sgl, FILE *pdf_file)
             return ERR_NO;
         }
 
-        processed = fread(content, sgl->pdf_data.size,
-                          sizeof(char), sgl->pdf_data.file);
-        if (processed != sgl->pdf_data.size) {
+        total_processed = 0;
+
+        while (total_processed * sizeof(char) < sgl->pdf_data.size) {
+            processed = fread(content + total_processed, sizeof(char),
+                              sgl->pdf_data.size, sgl->pdf_data.file);
+            total_processed += processed;
+            if (processed <= 0 ||
+                total_processed * sizeof(char) > sgl->pdf_data.size)
+            {
+                // fallback to using the file
+                free(content);
+                return ERR_NO;
+            }
+        }
+
+        if (total_processed * sizeof(char) != sgl->pdf_data.size) {
             // fallback to using the file
             free(content);
             return ERR_NO;
         }
-        content[processed] = '\0';
+
+        content[total_processed] = '\0';
 
         sgl->pdf_data.buffer = content;
         sgl->pdf_data.deallocation_info |= DEALLOCATE_BUFFER;
@@ -95,8 +111,39 @@ sigil_err_t sigil_set_pdf_path(sigil_t *sgl, const char *path_to_pdf)
 
     FILE *pdf_file = NULL;
 
-    if ((pdf_file = fopen(path_to_pdf, "r")) == NULL)
-        return ERR_IO;
+    #ifdef _WIN32
+        // convert path to wchar_t
+        size_t out_size;
+        size_t path_len;
+        wchar_t *path_to_pdf_win;
+
+        path_len = strlen(path_to_pdf) + 1;
+        path_to_pdf_win = malloc(path_len * sizeof(wchar_t));
+        if (path_to_pdf_win == NULL)
+            return ERR_ALLOCATION;
+        sigil_zeroize(path_to_pdf_win, path_len * sizeof(wchar_t));
+        if (mbstowcs_s(&out_size,       // out ... characters converted
+                       path_to_pdf_win, // out ... converted string
+                       path_len,        // in  ... size of path_to_pdf_win
+                       path_to_pdf,     // in  ... input string
+                       path_len - 1     // in  ... max wide chars to store
+           ) != 0)
+        {
+            free(path_to_pdf_win);
+            return ERR_IO;
+        }
+
+        if (_wfopen_s(&pdf_file, path_to_pdf_win, L"rb") != 0) {
+            free(path_to_pdf_win);
+            return ERR_IO;
+        }
+
+        free(path_to_pdf_win);
+    #else
+        if ((pdf_file = fopen(path_to_pdf, "rb")) == NULL)
+            return ERR_IO;
+    #endif
+
     sgl->pdf_data.deallocation_info |= DEALLOCATE_FILE;
 
     return sigil_set_pdf_file(sgl, pdf_file);
@@ -126,14 +173,37 @@ sigil_err_t sigil_verify(sigil_t *sgl)
     if (err != ERR_NO)
         return err;
 
-    // process cross-reference section
-    err = process_xref(sgl);
+    // determine offset to the first cross-reference section
+    err = read_startxref(sgl);
     if (err != ERR_NO)
         return err;
 
-    err = process_trailer(sgl);
-    if (err != ERR_NO)
-        return err;
+    if (sgl->xref != NULL)
+        xref_free(sgl->xref);
+    sgl->xref = xref_init();
+    if (sgl->xref == NULL)
+        return ERR_ALLOCATION;
+
+    sgl->xref->prev_section = sgl->startxref;
+
+    size_t max_file_updates = MAX_FILE_UPDATES;
+
+    while (sgl->xref->prev_section > 0 && (max_file_updates--) > 0) {
+        // go to the position of the beginning of next cross-reference section
+        err = pdf_move_pos_abs(sgl, sgl->xref->prev_section);
+        if (err != ERR_NO)
+            return err;
+
+        sgl->xref->prev_section = 0;
+
+        err = process_xref(sgl);
+        if (err != ERR_NO)
+            return err;
+
+        err = process_trailer(sgl);
+        if (err != ERR_NO)
+            return err;
+    }
 
     // TODO
 
@@ -186,14 +256,15 @@ int sigil_sigil_self_test(int verbosity)
     print_test_item("fn sigil_verify", verbosity);
 
     {
-        sgl = NULL;
-        err = sigil_init(&sgl);
-        if (err != ERR_NO || sgl == NULL)
+        sgl = test_prepare_sgl_path(
+                "test/uznavany_bez_razitka_bez_revinfo_27_2_2012_CMS.pdf");
+        if (sgl == NULL)
             goto failed;
 
-        // TODO
-        if (1)
+        if (sigil_verify(sgl) != ERR_NO || 1)
             goto failed;
+
+        // TODO test verification result
 
         sigil_free(&sgl);
     }
@@ -202,6 +273,7 @@ int sigil_sigil_self_test(int verbosity)
 
     // all tests done
     print_module_result(1, verbosity);
+
     return 0;
 
 failed:
@@ -210,5 +282,6 @@ failed:
 
     print_test_result(0, verbosity);
     print_module_result(0, verbosity);
+
     return 1;
 }
