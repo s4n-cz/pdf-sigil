@@ -173,14 +173,37 @@ sigil_err_t sigil_verify(sigil_t *sgl)
     if (err != ERR_NO)
         return err;
 
-    // process cross-reference section
-    err = process_xref(sgl);
+    // determine offset to the first cross-reference section
+    err = read_startxref(sgl);
     if (err != ERR_NO)
         return err;
 
-    err = process_trailer(sgl);
-    if (err != ERR_NO)
-        return err;
+    if (sgl->xref != NULL)
+        xref_free(sgl->xref);
+    sgl->xref = xref_init();
+    if (sgl->xref == NULL)
+        return ERR_ALLOCATION;
+
+    sgl->xref->prev_section = sgl->startxref;
+
+    size_t max_file_updates = MAX_FILE_UPDATES;
+
+    while (sgl->xref->prev_section > 0 && (max_file_updates--) > 0) {
+        // go to the position of the beginning of next cross-reference section
+        err = pdf_move_pos_abs(sgl, sgl->xref->prev_section);
+        if (err != ERR_NO)
+            return err;
+
+        sgl->xref->prev_section = 0;
+
+        err = process_xref(sgl);
+        if (err != ERR_NO)
+            return err;
+
+        err = process_trailer(sgl);
+        if (err != ERR_NO)
+            return err;
+    }
 
     // TODO
 
@@ -233,14 +256,15 @@ int sigil_sigil_self_test(int verbosity)
     print_test_item("fn sigil_verify", verbosity);
 
     {
-        sgl = NULL;
-        err = sigil_init(&sgl);
-        if (err != ERR_NO || sgl == NULL)
+        sgl = test_prepare_sgl_path(
+                "test/uznavany_bez_razitka_bez_revinfo_27_2_2012_CMS.pdf");
+        if (sgl == NULL)
             goto failed;
 
-        // TODO
-        if (1)
+        if (sigil_verify(sgl) != ERR_NO || 1)
             goto failed;
+
+        // TODO test verification result
 
         sigil_free(&sgl);
     }

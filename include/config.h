@@ -14,6 +14,10 @@
 // threshold in bytes for loading whole file into buffer
 #define THRESHOLD_FILE_BUFFERING    10485760
 
+// maximum number of file updates, preventing forever loop in processing
+// previous cross-reference sections (caused by cyclic links)
+#define MAX_FILE_UPDATES            1024
+
 // validate values
 int sigil_config_self_test(int verbosity);
 

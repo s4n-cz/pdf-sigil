@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "auxiliary.h"
 #include "constants.h"
 #include "trailer.h"
@@ -5,32 +6,27 @@
 sigil_err_t process_trailer(sigil_t *sgl)
 {
     sigil_err_t err;
-    keyword_t keyword;
     dict_key_t dict_key;
-    char c;
 
     if (sgl == NULL)
         return ERR_PARAMETER;
 
-    // read "trailer"
-    err = parse_keyword(sgl, &keyword);
+    err = parse_word(sgl, "trailer");
     if (err != ERR_NO)
         return err;
-    if (keyword != KEYWORD_trailer)
-        return ERR_PDF_CONTENT;
 
-    err = skip_leading_whitespaces(sgl);
+    err = parse_word(sgl, "<<");
     if (err != ERR_NO)
         return err;
-    if ((pdf_get_char(sgl, &c)) != ERR_NO || c != '<')
-        return ERR_PDF_CONTENT;
-    if ((pdf_get_char(sgl, &c)) != ERR_NO || c != '<')
-        return ERR_PDF_CONTENT;
 
     while ((err = parse_dict_key(sgl, &dict_key)) == ERR_NO) {
         switch (dict_key) {
             case DICT_KEY_Size:
-                err = parse_number(sgl, &(sgl->xref->size_from_trailer));
+                if (sgl->xref->size_from_trailer > 0) {
+                    err = skip_dict_unknown_value(sgl);
+                } else {
+                    err = parse_number(sgl, &(sgl->xref->size_from_trailer));
+                }
                 if (err != ERR_NO)
                     return err;
                 break;
@@ -40,7 +36,13 @@ sigil_err_t process_trailer(sigil_t *sgl)
                     return err;
                 break;
             case DICT_KEY_Root:
-                err = parse_indirect_reference(sgl, &(sgl->ref_catalog_dict));
+                if (sgl->ref_catalog_dict.object_num > 0 ||
+                    sgl->ref_catalog_dict.generation_num > 0)
+                {
+                    err = skip_dict_unknown_value(sgl);
+                } else {
+                    err = parse_indirect_reference(sgl, &(sgl->ref_catalog_dict));
+                }
                 if (err != ERR_NO)
                     return err;
                 break;
@@ -53,6 +55,9 @@ sigil_err_t process_trailer(sigil_t *sgl)
                 return ERR_PDF_CONTENT;
         }
     }
+
+    if (err == ERR_END_OF_DICT)
+        return ERR_NO;
 
     return err;
 }

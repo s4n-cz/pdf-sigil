@@ -15,19 +15,13 @@ sigil_err_t process_header(sigil_t *sgl)
     size_t read_size;
     size_t pdf_x, pdf_y;
 
-
     if (sgl == NULL)
         return ERR_PARAMETER;
 
-    err = pdf_move_pos_abs(sgl, 0);
-    if (err != ERR_NO)
-        return err;
-
-    offset = 0;
-
-    while(1) {
-        if (offset > HEADER_SEARCH_OFFSET)
-            return ERR_PDF_CONTENT;
+    for (offset = 0; offset < HEADER_SEARCH_OFFSET; offset++) {
+        err = pdf_move_pos_abs(sgl, offset);
+        if (err != ERR_NO)
+            return err;
 
         err = pdf_read(sgl, 5, tmp, &read_size);
         if (err != ERR_NO)
@@ -35,35 +29,32 @@ sigil_err_t process_header(sigil_t *sgl)
         if (read_size != 5)
             return ERR_PDF_CONTENT;
 
-        if (strncmp(tmp, "\x25PDF-", 5) == 0) {
-            if ((err = parse_number(sgl, &pdf_x)) != ERR_NO)
-                return err;
+        if (strncmp(tmp, "\x25PDF-", 5) != 0)
+            continue;
 
-            if ((err = pdf_get_char(sgl, &c)) != ERR_NO)
-                return err;
-            if (c != '.')
-                return ERR_PDF_CONTENT;
+        if ((err = parse_number(sgl, &pdf_x)) != ERR_NO)
+            return err;
 
-            if ((err = parse_number(sgl, &pdf_y)) != ERR_NO)
-                return err;
+        if ((err = pdf_get_char(sgl, &c)) != ERR_NO)
+            return err;
+        if (c != '.')
+            return ERR_PDF_CONTENT;
 
-            if ((pdf_x == 1 && pdf_y >= 0 && pdf_y <= 7) ||
-                (pdf_x == 2 && pdf_y == 0))
-            {
-                sgl->pdf_x = (short)pdf_x;
-                sgl->pdf_y = (short)pdf_y;
-            } else {
-                return ERR_PDF_CONTENT;
-            }
+        if ((err = parse_number(sgl, &pdf_y)) != ERR_NO)
+            return err;
 
-            sgl->pdf_start_offset = offset;
-
-            return ERR_NO;
+        if ((pdf_x == 1 && pdf_y >= 0 && pdf_y <= 7) ||
+            (pdf_x == 2 && pdf_y == 0))
+        {
+            sgl->pdf_x = (short)pdf_x;
+            sgl->pdf_y = (short)pdf_y;
+        } else {
+            return ERR_PDF_CONTENT;
         }
 
-        if ((err = pdf_move_pos_rel(sgl, -4)) != ERR_NO)
-            return err;
-        offset++;
+        sgl->pdf_start_offset = offset;
+
+        return ERR_NO;
     }
 
     return ERR_PDF_CONTENT;
