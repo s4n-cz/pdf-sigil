@@ -12,7 +12,7 @@
 
 typedef uint32_t sigil_err_t;
 
-typedef uint32_t keyword_t;
+typedef uint32_t subfilter_t;
 
 typedef uint32_t dict_key_t;
 
@@ -20,6 +20,17 @@ typedef struct {
     size_t object_num;
     size_t generation_num;
 } reference_t;
+
+typedef struct range_t {
+    size_t start;
+    size_t length;
+    struct range_t *next;
+} range_t;
+
+typedef struct {
+    reference_t **entry;
+    size_t capacity;
+} ref_array_t;
 
 typedef struct xref_entry_t {
     size_t byte_offset;
@@ -49,8 +60,17 @@ typedef struct {
     short       xref_type;
     xref_t     *xref;
     reference_t ref_catalog_dict;
+    reference_t ref_acroform;
+    size_t      offset_acroform;
+    reference_t ref_sig_field;
+    reference_t ref_sig_dict;
+    size_t      offset_sig_dict;
+    ref_array_t fields;
     size_t      pdf_start_offset;  /* offset of %PDF-x.y      */
     size_t      startxref;
+    size_t      sig_flags;
+    subfilter_t subfilter;
+    range_t    *byte_range;
 } sigil_t;
 
 #endif /* PDF_SIGIL_TYPES_H */

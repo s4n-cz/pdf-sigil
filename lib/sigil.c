@@ -1,12 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <types.h>
+#include "acroform.h"
 #include "auxiliary.h"
+#include "catalog_dict.h"
 #include "config.h"
 #include "constants.h"
 #include "header.h"
+#include "sig_dict.h"
+#include "sig_field.h"
 #include "sigil.h"
 #include "trailer.h"
+#include "types.h"
 #include "xref.h"
 
 sigil_err_t sigil_init(sigil_t **sgl)
@@ -33,8 +39,17 @@ sigil_err_t sigil_init(sigil_t **sgl)
     (*sgl)->xref                            = NULL;
     (*sgl)->ref_catalog_dict.object_num     = 0;
     (*sgl)->ref_catalog_dict.generation_num = 0;
+    (*sgl)->ref_acroform.object_num         = 0;
+    (*sgl)->ref_acroform.generation_num     = 0;
+    (*sgl)->ref_sig_field.object_num        = 0;
+    (*sgl)->ref_sig_field.generation_num    = 0;
+    (*sgl)->ref_sig_dict.object_num         = 0;
+    (*sgl)->ref_sig_dict.generation_num     = 0;
+    (*sgl)->fields.entry                    = NULL;
+    (*sgl)->fields.capacity                 = 0;
     (*sgl)->pdf_start_offset                = 0;
     (*sgl)->startxref                       = 0;
+    (*sgl)->sig_flags                       = 0;
 
     return ERR_NO;
 }
@@ -205,7 +220,36 @@ sigil_err_t sigil_verify(sigil_t *sgl)
             return err;
     }
 
-    // TODO
+    err = process_catalog_dictionary(sgl);
+    if (err != ERR_NO)
+        return err;
+
+    err = process_acroform(sgl);
+    if (err != ERR_NO)
+        return err;
+
+    if ((sgl->sig_flags & 0x01) == 0)
+        return ERR_NO_SIGNATURE;
+
+    err = find_sig_field(sgl);
+    if (err != ERR_NO)
+        return err;
+
+    err = process_sig_field(sgl);
+    if (err != ERR_NO)
+        return err;
+
+    err = process_sig_dict(sgl);
+    if (err != ERR_NO)
+        return err;
+
+    switch (sgl->subfilter) {
+        case SUBFILTER_adbe_x509_rsa_sha1:
+
+            break;
+        default:
+            return ERR_NOT_IMPLEMENTED;
+    }
 
     return ERR_NO;
 }
@@ -227,6 +271,14 @@ void sigil_free(sigil_t **sgl)
     if ((*sgl)->xref)
         xref_free((*sgl)->xref);
 
+    if ((*sgl)->fields.capacity > 0) {
+        for (size_t i = 0; i < (*sgl)->fields.capacity; i++) {
+            if ((*sgl)->fields.entry[i] != NULL) {
+                free((*sgl)->fields.entry[i]);
+            }
+        }
+    }
+
     free(*sgl);
     *sgl = NULL;
 }
@@ -246,6 +298,24 @@ int sigil_sigil_self_test(int verbosity)
         err = sigil_init(&sgl);
         if (err != ERR_NO || sgl == NULL)
             goto failed;
+
+        sigil_free(&sgl);
+    }
+
+    print_test_result(1, verbosity);
+
+    // TEST: fn sigil_verify with subfilter x509.rsa_sha1
+    print_test_item("VERIFY x509.rsa_sha1", verbosity);
+
+    {
+        sgl = test_prepare_sgl_path("test/EduLib__adbe.x509.rsa_sha1.pdf");
+        if (sgl == NULL)
+            goto failed;
+
+        if (sigil_verify(sgl) != ERR_NO || 1)
+            goto failed;
+
+        // TODO test verification result
 
         sigil_free(&sgl);
     }

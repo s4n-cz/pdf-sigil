@@ -29,6 +29,14 @@ int sigil_config_self_test(int verbosity)
 
     print_test_result(1, verbosity);
 
+    // TEST: REF_ARRAY_PREALLOCATION
+    print_test_item("FIELDS_PREALLOCATION", verbosity);
+
+    if (REF_ARRAY_PREALLOCATION < 1)
+        goto failed;
+
+    print_test_result(1, verbosity);
+
     // TEST: THRESHOLD_FILE_BUFFERING
     print_test_item("THRESHOLD_FILE_BUFFERING", verbosity);
 

@@ -40,7 +40,7 @@ add_xref_entry(xref_t *xref, size_t obj, size_t offset, size_t generation)
     }
 
     if (resize_factor != 1) {
-        xref->entry = realloc(xref->entry,sizeof(xref_entry_t *) * xref->capacity * resize_factor);
+        xref->entry = realloc(xref->entry, sizeof(xref_entry_t *) * xref->capacity * resize_factor);
         if (xref->entry == NULL)
             return ERR_ALLOCATION;
         sigil_zeroize(xref->entry + xref->capacity, sizeof(xref_entry_t *) * (xref->capacity * (resize_factor - 1)));
@@ -123,15 +123,10 @@ sigil_err_t read_startxref(sigil_t *sgl)
 
     file_size = sgl->pdf_data.size - 1;
 
-    err = pdf_move_pos_abs(sgl, file_size - 9);
-    if (err != ERR_NO)
-        return err;
-    offset = 9;
-
-    while (1) {
-        if (offset > XREF_SEARCH_OFFSET)
-            return ERR_PDF_CONTENT;
-
+    for (offset = 9; offset < XREF_SEARCH_OFFSET; offset++) {
+        if ((err = pdf_move_pos_abs(sgl, file_size - offset)) != ERR_NO)
+            return err;
+        
         err = pdf_read(sgl, 9, tmp, &read_size);
         if (err != ERR_NO)
             return err;
@@ -146,10 +141,6 @@ sigil_err_t read_startxref(sigil_t *sgl)
 
             return ERR_NO;
         }
-
-        if ((err = pdf_move_pos_rel(sgl, -10)) != ERR_NO)
-            return err;
-        offset++;
     }
 
     return ERR_PDF_CONTENT;

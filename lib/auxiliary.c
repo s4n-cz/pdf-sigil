@@ -1,10 +1,13 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "auxiliary.h"
+#include "config.h"
 #include "constants.h"
 #include "sigil.h"
+#include "types.h"
 
-#define DICT_KEY_MAX   10
+#define DICT_KEY_MAX   20
 
 
 void sigil_zeroize(void *a, size_t bytes)
@@ -191,6 +194,70 @@ sigil_err_t pdf_move_pos_abs(sigil_t *sgl, size_t position)
     return ERR_NO_DATA;
 }
 
+sigil_err_t pdf_goto_obj(sigil_t *sgl, reference_t *ref)
+{
+    sigil_err_t err;
+    size_t offset,
+           tmp;
+
+    if (sgl == NULL || ref == NULL)
+        return ERR_PARAMETER;
+
+    if (ref->object_num <= 0 &&
+        ref->generation_num <= 0)
+    {
+        return ERR_NO_DATA;
+    }
+
+    err = reference_to_offset(sgl, ref, &offset);
+    if (err != ERR_NO)
+        return err;
+
+    err = pdf_move_pos_abs(sgl, offset);
+    if (err != ERR_NO)
+        return err;
+
+    err = parse_number(sgl, &tmp);
+    if (err != ERR_NO)
+        return err;
+    if (tmp != ref->object_num)
+        return ERR_PDF_CONTENT;
+
+    err = parse_number(sgl, &tmp);
+    if (err != ERR_NO)
+        return err;
+    if (tmp != ref->generation_num)
+        return ERR_PDF_CONTENT;
+
+    err = parse_word(sgl, "obj");
+    if (err != ERR_NO)
+        return err;
+
+    return ERR_NO;
+}
+
+sigil_err_t get_curr_position(sigil_t *sgl, size_t *result)
+{
+    if (sgl == NULL || result == NULL)
+        return ERR_PARAMETER;
+
+    if (sgl->pdf_data.buffer != NULL) {
+        *result = sgl->pdf_data.buf_pos;
+
+        return ERR_NO;
+    }
+
+    if (sgl->pdf_data.file != NULL) {
+        *result = (size_t)ftell(sgl->pdf_data.file);
+        if (*result < 0)
+            return ERR_IO;
+
+        return ERR_NO;
+    }
+
+    return ERR_NO_DATA;
+}
+
 sigil_err_t skip_leading_whitespaces(sigil_t *sgl)
 {
     sigil_err_t err;
@@ -272,26 +339,43 @@ sigil_err_t skip_dict_unknown_value(sigil_t *sgl)
 {
     sigil_err_t err;
     char c;
+    int first_non_whitespace = 1;
 
     while ((err = pdf_peek_char(sgl, &c)) == ERR_NO) {
-        switch (c) {
-            case '/':
-                return ERR_NO;
-            case '[':
-                if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NO)
-                    return err;
-                if ((err = skip_array(sgl)) != ERR_NO)
-                    return err;
-                return ERR_NO;
-            case '<':
-                if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NO)
-                    return err;
-                if ((err = pdf_peek_char(sgl, &c)) != ERR_NO)
-                    return err;
-                if (c != '<')
+        if (first_non_whitespace && !is_whitespace(c)) {
+            first_non_whitespace = 0;
+
+            switch (c) {
+                case '/':
+                    if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NO)
+                        return err;
                     break;
-                if ((err = skip_dictionary(sgl)) != ERR_NO)
-                    return err;
+                case '[':
+                    if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NO)
+                        return err;
+                    if ((err = skip_array(sgl)) != ERR_NO)
+                        return err;
+                    return ERR_NO;
+                case '<':
+                    if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NO)
+                        return err;
+                    if ((err = pdf_peek_char(sgl, &c)) != ERR_NO)
+                        return err;
+                    if (c != '<')
+                        break;
+                    if ((err = skip_dictionary(sgl)) != ERR_NO)
+                        return err;
+                    return ERR_NO;
+                default:
+                    break;
+            }
+
+            continue;
+        }
+
+        switch (c) {
+            case '/': // key of next entry
+            case '>': // end of dictionary
                 return ERR_NO;
             case EOF:
                 return ERR_PDF_CONTENT;
@@ -420,17 +504,122 @@ sigil_err_t parse_dict_key(sigil_t *sgl, dict_key_t *dict_key)
             return err;
     }
 
+    tmp[count] = '\0';
+
+    if (err != ERR_NO)
+        return err;
+
     if (strncmp(tmp, "Size", 4) == 0) {
         *dict_key = DICT_KEY_Size;
     } else if (strncmp(tmp, "Prev", 4) == 0) {
         *dict_key = DICT_KEY_Prev;
     } else if (strncmp(tmp, "Root", 4) == 0) {
         *dict_key = DICT_KEY_Root;
+    } else if (strncmp(tmp, "AcroForm", 8) == 0) {
+        *dict_key = DICT_KEY_AcroForm;
+    } else if (strncmp(tmp, "Fields", 6) == 0) {
+        *dict_key = DICT_KEY_Fields;
+    } else if (strncmp(tmp, "SigFlags", 8) == 0) {
+        *dict_key = DICT_KEY_SigFlags;
+    } else if (strncmp(tmp, "FT", 2) == 0) {
+        *dict_key = DICT_KEY_FT;
+    } else if (strncmp(tmp, "V", 1) == 0) {
+        *dict_key = DICT_KEY_V;
+    } else if (strncmp(tmp, "SubFilter", 9) == 0) {
+        *dict_key = DICT_KEY_SubFilter;
+    } else if (strncmp(tmp, "Cert", 4) == 0) {
+        *dict_key = DICT_KEY_Cert;
+    } else if (strncmp(tmp, "Contents", 8) == 0) {
+        *dict_key = DICT_KEY_Contents;
+    } else if (strncmp(tmp, "ByteRange", 9) == 0) {
+        *dict_key = DICT_KEY_ByteRange;
     } else {
         *dict_key = DICT_KEY_UNKNOWN;
     }
 
     return ERR_NO;
+}
+
+// parsing array of indirect references into ref_array
+sigil_err_t parse_ref_array(sigil_t *sgl, ref_array_t *ref_array)
+{
+    sigil_err_t err;
+    size_t position;
+    reference_t reference;
+
+    if (sgl == NULL || ref_array == NULL)
+        return ERR_PARAMETER;
+
+    if ((err = parse_word(sgl, "[")) != ERR_NO)
+        return err;
+
+    if (parse_word(sgl, "]") == ERR_NO) // empty array
+        return ERR_NO;
+
+    if (ref_array->capacity <= 0) {
+        ref_array->entry = malloc(sizeof(*ref_array->entry) * REF_ARRAY_PREALLOCATION);
+        if (ref_array->entry == NULL)
+            return ERR_ALLOCATION;
+        sigil_zeroize(ref_array->entry, sizeof(*ref_array->entry) * REF_ARRAY_PREALLOCATION);
+        ref_array->capacity = REF_ARRAY_PREALLOCATION;
+    }
+
+    position = 0;
+
+    while ((err = parse_indirect_reference(sgl,&reference)) == ERR_NO) {
+        if (position >= ref_array->capacity) {
+            ref_array->entry = realloc(ref_array->entry,
+                sizeof(*ref_array->entry) * ref_array->capacity * 2);
+
+            if (ref_array->entry == NULL)
+                return ERR_ALLOCATION;
+
+            sigil_zeroize(ref_array->entry + ref_array->capacity,
+                sizeof(*ref_array->entry) * ref_array->capacity);
+
+            ref_array->capacity *= 2;
+        }
+
+        if (ref_array->entry[position] == NULL) {
+            ref_array->entry[position] = malloc(sizeof(reference_t));
+            if (ref_array->entry[position] == NULL)
+                return ERR_ALLOCATION;
+        }
+
+        ref_array->entry[position]->object_num = reference.object_num;
+        ref_array->entry[position]->generation_num = reference.generation_num;
+
+        if (parse_word(sgl, "]") == ERR_NO)
+            return ERR_NO;
+
+        position++;
+    }
+
+    return err;
+}
+
+sigil_err_t reference_to_offset(sigil_t *sgl, const reference_t *ref, size_t *result)
+{
+    xref_entry_t *xref_entry;
+
+    if (sgl == NULL || ref == NULL || sgl->xref == NULL)
+        return ERR_PARAMETER;
+
+    if (sgl->xref->capacity <= ref->object_num)
+        return ERR_NO_DATA;
+
+    xref_entry = sgl->xref->entry[ref->object_num];
+
+    while (xref_entry != NULL) {
+        if (xref_entry->generation_num == ref->generation_num) {
+            *result = xref_entry->byte_offset;
+            return ERR_NO;
+        }
+
+        xref_entry = xref_entry->next;
+    }
+
+    return ERR_NO_DATA;
 }
 
 const char *sigil_err_string(sigil_err_t err)

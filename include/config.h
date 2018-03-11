@@ -11,6 +11,9 @@
 // capacity to choose for the first xref allocation
 #define XREF_PREALLOCATION          10
 
+// capacity to choose for the first allocation in array of fields
+#define REF_ARRAY_PREALLOCATION        10
+
 // threshold in bytes for loading whole file into buffer
 #define THRESHOLD_FILE_BUFFERING    10485760
 
