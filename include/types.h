@@ -21,6 +21,17 @@ typedef struct {
     size_t generation_num;
 } reference_t;
 
+typedef struct {
+    char  *contents_hex;
+    size_t capacity;
+} contents_t;
+
+typedef struct cert_t {
+    char  *cert_hex;
+    size_t capacity;
+    struct cert_t *next;
+} cert_t;
+
 typedef struct range_t {
     size_t start;
     size_t length;
@@ -71,6 +82,8 @@ typedef struct {
     size_t      sig_flags;
     subfilter_t subfilter;
     range_t    *byte_range;
+    cert_t     *certificates;
+    contents_t *contents;
 } sigil_t;
 
 #endif /* PDF_SIGIL_TYPES_H */

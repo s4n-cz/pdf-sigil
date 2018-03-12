@@ -30,9 +30,25 @@ int sigil_config_self_test(int verbosity)
     print_test_result(1, verbosity);
 
     // TEST: REF_ARRAY_PREALLOCATION
-    print_test_item("FIELDS_PREALLOCATION", verbosity);
+    print_test_item("REF_ARRAY_PREALLOCATION", verbosity);
 
     if (REF_ARRAY_PREALLOCATION < 1)
+        goto failed;
+
+    print_test_result(1, verbosity);
+
+    // TEST: CERT_HEX_PREALLOCATION
+    print_test_item("CERT_HEX_PREALLOCATION", verbosity);
+
+    if (CERT_HEX_PREALLOCATION < 1)
+        goto failed;
+
+    print_test_result(1, verbosity);
+
+    // TEST: CONTENTS_PREALLOCATION
+    print_test_item("CONTENTS_PREALLOCATION", verbosity);
+
+    if (CONTENTS_PREALLOCATION < 1)
         goto failed;
 
     print_test_result(1, verbosity);
@@ -41,6 +57,14 @@ int sigil_config_self_test(int verbosity)
     print_test_item("THRESHOLD_FILE_BUFFERING", verbosity);
 
     if (THRESHOLD_FILE_BUFFERING < 0)
+        goto failed;
+
+    print_test_result(1, verbosity);
+
+    // TEST: MAX_FILE_UPDATES
+    print_test_item("MAX_FILE_UPDATES", verbosity);
+
+    if (MAX_FILE_UPDATES < 1)
         goto failed;
 
     print_test_result(1, verbosity);

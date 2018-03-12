@@ -2,11 +2,14 @@
 #include <string.h>
 #include <types.h>
 #include "auxiliary.h"
+#include "cert.h"
+#include "contents.h"
 #include "constants.h"
 #include "sig_dict.h"
-
+#include "types.h"
 
 #define SUBFILTER_MAX    30
+
 
 static sigil_err_t parse_subfilter(sigil_t *sgl)
 {
@@ -73,6 +76,8 @@ static sigil_err_t parse_byte_range(sigil_t *sgl)
         if (err != ERR_NO)
             return err;
 
+        // TODO add some checks for start and length
+
         if (*byte_range == NULL) {
             *byte_range = malloc(sizeof(**byte_range));
             if (*byte_range == NULL)
@@ -114,23 +119,30 @@ sigil_err_t process_sig_dict(sigil_t *sgl)
             case DICT_KEY_SubFilter:
                 if ((err = parse_subfilter(sgl)) != ERR_NO)
                     return err;
+
                 break;
             case DICT_KEY_Cert:
-
+                err = parse_certs(sgl);
+                if (err != ERR_NO)
+                    return err;
 
                 break;
             case DICT_KEY_Contents:
-
+                err = parse_contents(sgl);
+                if (err != ERR_NO)
+                    return err;
 
                 break;
             case DICT_KEY_ByteRange:
                 if ((err = parse_byte_range(sgl)) != ERR_NO)
                     return err;
+
                 break;
             case DICT_KEY_UNKNOWN:
                 err = skip_dict_unknown_value(sgl);
                 if (err != ERR_NO)
                     return err;
+
                 break;
             default:
                 return ERR_PDF_CONTENT;

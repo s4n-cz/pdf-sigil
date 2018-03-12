@@ -12,7 +12,13 @@
 #define XREF_PREALLOCATION          10
 
 // capacity to choose for the first allocation in array of fields
-#define REF_ARRAY_PREALLOCATION        10
+#define REF_ARRAY_PREALLOCATION     10
+
+// capacity to choose for the first allocation of array for certificates
+#define CERT_HEX_PREALLOCATION      1024
+
+// capacity to choose for the first allocation of array for contents
+#define CONTENTS_PREALLOCATION      1024
 
 // threshold in bytes for loading whole file into buffer
 #define THRESHOLD_FILE_BUFFERING    10485760

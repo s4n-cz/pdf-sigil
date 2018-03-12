@@ -41,15 +41,21 @@ sigil_err_t sigil_init(sigil_t **sgl)
     (*sgl)->ref_catalog_dict.generation_num = 0;
     (*sgl)->ref_acroform.object_num         = 0;
     (*sgl)->ref_acroform.generation_num     = 0;
+    (*sgl)->offset_acroform                 = 0;
     (*sgl)->ref_sig_field.object_num        = 0;
     (*sgl)->ref_sig_field.generation_num    = 0;
     (*sgl)->ref_sig_dict.object_num         = 0;
     (*sgl)->ref_sig_dict.generation_num     = 0;
+    (*sgl)->offset_sig_dict                 = 0;
     (*sgl)->fields.entry                    = NULL;
     (*sgl)->fields.capacity                 = 0;
     (*sgl)->pdf_start_offset                = 0;
     (*sgl)->startxref                       = 0;
     (*sgl)->sig_flags                       = 0;
+    (*sgl)->subfilter                       = SUBFILTER_UNKNOWN;
+    (*sgl)->byte_range                      = NULL;
+    (*sgl)->certificates                    = NULL;
+    (*sgl)->contents                        = NULL;
 
     return ERR_NO;
 }
@@ -254,6 +260,29 @@ sigil_err_t sigil_verify(sigil_t *sgl)
     return ERR_NO;
 }
 
+static void range_free(range_t *range)
+{
+    if (range == NULL)
+        return;
+
+    range_free(range->next);
+
+    free(range);
+}
+
+static void cert_free(cert_t *cert)
+{
+    if (cert == NULL)
+        return;
+
+    cert_free(cert->next);
+
+    if (cert->cert_hex != NULL)
+        free(cert->cert_hex);
+
+    free(cert);
+}
+
 void sigil_free(sigil_t **sgl)
 {
     if (sgl == NULL || *sgl == NULL)
@@ -268,8 +297,9 @@ void sigil_free(sigil_t **sgl)
         (*sgl)->pdf_data.deallocation_info ^= DEALLOCATE_BUFFER;
     }
 
-    if ((*sgl)->xref)
+    if ((*sgl)->xref != NULL)
         xref_free((*sgl)->xref);
+
 
     if ((*sgl)->fields.capacity > 0) {
         for (size_t i = 0; i < (*sgl)->fields.capacity; i++) {
@@ -277,6 +307,22 @@ void sigil_free(sigil_t **sgl)
                 free((*sgl)->fields.entry[i]);
             }
         }
+
+        if ((*sgl)->fields.entry != NULL)
+            free((*sgl)->fields.entry);
+    }
+
+    if ((*sgl)->byte_range != NULL)
+        range_free((*sgl)->byte_range);
+
+    if ((*sgl)->certificates != NULL)
+        cert_free((*sgl)->certificates);
+
+    if ((*sgl)->contents != NULL) {
+        if ((*sgl)->contents->contents_hex != NULL)
+            free((*sgl)->contents->contents_hex);
+
+        free((*sgl)->contents);
     }
 
     free(*sgl);
