@@ -1,11 +1,68 @@
 #include <openssl/evp.h>
+#include <openssl/x509.h>
 #include <types.h>
+#include <string.h>
 #include "auxiliary.h"
 #include "config.h"
 #include "constants.h"
 #include "cryptography.h"
 #include "types.h"
 
+
+sigil_err_t hex_to_dec(const char *in, size_t in_len, unsigned char *out, size_t *out_len)
+{
+    int first,
+        second;
+
+    if (in == NULL || (in_len % 2) != 0 || out == NULL || out_len == NULL)
+        return ERR_PARAMETER;
+
+    *out_len = 0;
+
+    for (size_t i = 0; i < in_len; i += 2) {
+        if (is_digit(in[i])) {
+            first = (in[i] - '0') << 4;
+        } else if (in[i] >= 'A' && in[i] <= 'F') {
+            first = (in[i] - 55) << 4;
+        } else if (in[i] >= 'a' && in[i] <= 'f') {
+            first = (in[i] - 87) << 4;
+        } else {
+            return ERR_PDF_CONTENT;
+        }
+
+        if (is_digit(in[i + 1])) {
+            second = in[i + 1] - '0';
+        } else if (in[i + 1] >= 'A' && in[i + 1] <= 'F') {
+            second = in[i + 1] - 55;
+        } else if (in[i + 1] >= 'a' && in[i + 1] <= 'f') {
+            second = in[i + 1] - 87;
+        } else {
+            return ERR_PDF_CONTENT;
+        }
+
+        out[*out_len] = (unsigned char)(first + second);
+
+        (*out_len)++;
+    }
+
+    out[*out_len] = '\0';
+
+    return ERR_NO;
+}
+
+void print_computed_hash(sigil_t *sgl)
+{
+    if (sgl == NULL || sgl->computed_hash_len <= 0)
+        return;
+
+    printf("\nCOMPUTED HASH: ");
+
+    for (int i = 0; i < sgl->computed_hash_len; i++) {
+        printf("%02x ", sgl->computed_hash[i]);
+    }
+
+    printf("\n");
+}
 
 sigil_err_t compute_sha1_hash_over_range(sigil_t *sgl)
 {
@@ -70,6 +127,8 @@ sigil_err_t compute_sha1_hash_over_range(sigil_t *sgl)
         goto failed;
     }
 
+    free(current_data);
+
     EVP_MD_CTX_destroy(ctx);
 
     return ERR_NO;
@@ -78,5 +137,56 @@ failed:
     if (ctx != NULL)
         EVP_MD_CTX_destroy(ctx);
 
+    free(current_data);
+
     return err;
+}
+
+sigil_err_t load_certificates(sigil_t *sgl)
+{
+    sigil_err_t err;
+    cert_t *certificate;
+    unsigned char *tmp_cert;
+    const unsigned char *const_tmp;
+    size_t cert_length;
+    size_t tmp_cert_len;
+
+    if (sgl == NULL)
+        return ERR_PARAMETER;
+
+    certificate = sgl->certificates;
+
+    while (certificate != NULL) {
+        if (certificate->x509 != NULL) {
+            X509_free(certificate->x509);
+            certificate->x509 = NULL;
+        }
+
+        cert_length = strlen(certificate->cert_hex);
+
+        tmp_cert = malloc(sizeof(*(certificate->cert_hex)) * ((cert_length + 1) / 2 + 1));
+        if (tmp_cert == NULL)
+            return ERR_ALLOCATION;
+
+        sigil_zeroize(tmp_cert,
+                      sizeof(*(certificate->cert_hex)) * ((cert_length + 1) / 2 + 1));
+
+        err = hex_to_dec(certificate->cert_hex, cert_length, tmp_cert, &tmp_cert_len);
+        if (err != ERR_NO)
+            return err;
+
+        const_tmp = tmp_cert;
+
+        certificate->x509 = d2i_X509(NULL, &const_tmp, tmp_cert_len);
+        if (certificate->x509 == NULL) {
+            free(tmp_cert);
+            return ERR_OPENSSL;
+        }
+
+        free(tmp_cert);
+
+        certificate = certificate->next;
+    }
+
+    return ERR_NO;
 }

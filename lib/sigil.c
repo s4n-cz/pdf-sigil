@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <types.h>
+#include <openssl/x509.h>
 #include "acroform.h"
 #include "auxiliary.h"
 #include "catalog_dict.h"
@@ -194,6 +195,13 @@ static sigil_err_t sigil_verify_adbe_x509_rsa_sha1(sigil_t *sgl)
     if (err != ERR_NO)
         return err;
 
+    // TODO remove
+    print_computed_hash(sgl);
+
+    err = load_certificates(sgl);
+    if (err != ERR_NO)
+        return err;
+
 
 }
 
@@ -298,6 +306,9 @@ void cert_free(cert_t *cert)
 
     if (cert->cert_hex != NULL)
         free(cert->cert_hex);
+
+    if (cert->x509 != NULL)
+        X509_free(cert->x509);
 
     free(cert);
 }

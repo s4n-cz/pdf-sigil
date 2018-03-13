@@ -29,6 +29,7 @@ typedef struct {
 
 typedef struct cert_t {
     char  *cert_hex;
+    X509  *x509;
     size_t capacity;
     struct cert_t *next;
 } cert_t;
