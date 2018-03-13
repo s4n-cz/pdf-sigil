@@ -4,9 +4,14 @@ project(pdf_sigil)
 set(CMAKE_C_STANDARD 11)
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic")
 
+# add OpenSSL
+#set (OPENSSL_USE_STATIC_LIBS TRUE)
+#include(FindOpenSSL)
+#find_package(OpenSSL REQUIRED)
+
 # header files
 include_directories(include)
-
+#include_directories(${OPENSSL_INCLUDE_DIR})
 
 file(GLOB LIB_SRC "lib/*.c")
 set (TEST_SRC "test/test.c")
@@ -14,6 +19,11 @@ set (TEST_SRC "test/test.c")
 # build both static and shared library
 add_library(pdf-sigil_static STATIC ${LIB_SRC})
 add_library(pdf-sigil_shared SHARED ${LIB_SRC})
+
+#target_link_libraries(pdf-sigil_static ${OPENSSL_LIBRARIES} dl pthread)
+#target_link_libraries(pdf-sigil_shared ${OPENSSL_LIBRARIES} dl pthread)
+target_link_libraries(pdf-sigil_static crypto)
+target_link_libraries(pdf-sigil_shared crypto)
 
 # build selftest executable
 add_executable(selftest ${TEST_SRC})

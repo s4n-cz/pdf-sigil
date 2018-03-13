@@ -69,6 +69,14 @@ int sigil_config_self_test(int verbosity)
 
     print_test_result(1, verbosity);
 
+    // TEST: HASH_UPDATE_SIZE
+    print_test_item("HASH_UPDATE_SIZE", verbosity);
+
+    if (HASH_UPDATE_SIZE < 1)
+        goto failed;
+
+    print_test_result(1, verbosity);
+
     // all tests done
     print_module_result(1, verbosity);
     return 0;

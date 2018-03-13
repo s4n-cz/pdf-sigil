@@ -5,6 +5,7 @@
 #include "config.h"
 #include "constants.h"
 #include "types.h"
+#include "sigil.h"
 
 
 sigil_err_t parse_one_cert(sigil_t *sgl, cert_t **result)
@@ -17,9 +18,10 @@ sigil_err_t parse_one_cert(sigil_t *sgl, cert_t **result)
     if (sgl == NULL || result == NULL)
         return ERR_PARAMETER;
 
-    if (*result != NULL)
-        ; // TODO free result
-    *result = NULL;
+    if (*result != NULL) {
+        cert_free(*result);
+        *result = NULL;
+    }
 
     if ((err = parse_word(sgl, "<")) != ERR_NO)
         return err;

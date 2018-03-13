@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <types.h>
 #include "auxiliary.h"
 #include "config.h"
 #include "constants.h"
@@ -113,7 +114,6 @@ void xref_free(xref_t *xref)
 sigil_err_t read_startxref(sigil_t *sgl)
 {
     sigil_err_t err;
-    size_t file_size;
     size_t offset;
     size_t read_size;
     char tmp[10];
@@ -121,10 +121,8 @@ sigil_err_t read_startxref(sigil_t *sgl)
     if (sgl == NULL)
         return ERR_PARAMETER;
 
-    file_size = sgl->pdf_data.size - 1;
-
     for (offset = 9; offset < XREF_SEARCH_OFFSET; offset++) {
-        if ((err = pdf_move_pos_abs(sgl, file_size - offset)) != ERR_NO)
+        if ((err = pdf_move_pos_abs(sgl, sgl->pdf_data.size - offset)) != ERR_NO)
             return err;
         
         err = pdf_read(sgl, 9, tmp, &read_size);

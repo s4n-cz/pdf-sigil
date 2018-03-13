@@ -76,7 +76,8 @@ static sigil_err_t parse_byte_range(sigil_t *sgl)
         if (err != ERR_NO)
             return err;
 
-        // TODO add some checks for start and length
+        if (start + length > sgl->pdf_data.size)
+            return ERR_PDF_CONTENT;
 
         if (*byte_range == NULL) {
             *byte_range = malloc(sizeof(**byte_range));

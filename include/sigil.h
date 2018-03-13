@@ -14,6 +14,10 @@ sigil_err_t sigil_verify(sigil_t *sgl);
 
 // ... get functions TODO
 
+void cert_free(cert_t *cert);
+
+void contents_free(sigil_t *sgl);
+
 void sigil_free(sigil_t **sgl);
 
 int sigil_sigil_self_test(int verbosity);

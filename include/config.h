@@ -27,6 +27,9 @@
 // previous cross-reference sections (caused by cyclic links)
 #define MAX_FILE_UPDATES            1024
 
+// maximum size we give to hash function at once
+#define HASH_UPDATE_SIZE            1024
+
 // validate values
 int sigil_config_self_test(int verbosity);
 

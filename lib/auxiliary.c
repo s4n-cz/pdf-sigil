@@ -172,9 +172,6 @@ sigil_err_t pdf_move_pos_abs(sigil_t *sgl, size_t position)
     if (sgl == NULL)
         return ERR_PARAMETER;
 
-    if (position == 0)
-        return ERR_NO;
-
     if (sgl->pdf_data.buffer != NULL) {
         if (position > sgl->pdf_data.size - 1)
             return ERR_IO;

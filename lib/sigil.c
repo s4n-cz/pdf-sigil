@@ -7,6 +7,7 @@
 #include "catalog_dict.h"
 #include "config.h"
 #include "constants.h"
+#include "cryptography.h"
 #include "header.h"
 #include "sig_dict.h"
 #include "sig_field.h"
@@ -26,6 +27,8 @@ sigil_err_t sigil_init(sigil_t **sgl)
         return ERR_ALLOCATION;
 
     sigil_zeroize(*sgl, sizeof(*sgl));
+    sigil_zeroize((*sgl)->computed_hash,
+                  sizeof(*(*sgl)->computed_hash) * EVP_MAX_MD_SIZE);
 
     // set default values
     (*sgl)->pdf_data.file                   = NULL;
@@ -56,6 +59,8 @@ sigil_err_t sigil_init(sigil_t **sgl)
     (*sgl)->byte_range                      = NULL;
     (*sgl)->certificates                    = NULL;
     (*sgl)->contents                        = NULL;
+    (*sgl)->computed_hash_len               = 0;
+
 
     return ERR_NO;
 }
@@ -80,7 +85,7 @@ sigil_err_t sigil_set_pdf_file(sigil_t *sgl, FILE *pdf_file)
         return ERR_IO;
 
     // - 2) read current position
-    sgl->pdf_data.size = (size_t)(ftell(sgl->pdf_data.file) - 1);
+    sgl->pdf_data.size = (size_t)ftell(sgl->pdf_data.file);
     if (sgl->pdf_data.size < 0)
         return ERR_IO;
 
@@ -181,6 +186,17 @@ sigil_err_t sigil_set_pdf_buffer(sigil_t *sgl, char *pdf_content, size_t size)
     return ERR_NO;
 }
 
+static sigil_err_t sigil_verify_adbe_x509_rsa_sha1(sigil_t *sgl)
+{
+    sigil_err_t err;
+
+    err = compute_sha1_hash_over_range(sgl);
+    if (err != ERR_NO)
+        return err;
+
+
+}
+
 sigil_err_t sigil_verify(sigil_t *sgl)
 {
     sigil_err_t err;
@@ -251,8 +267,11 @@ sigil_err_t sigil_verify(sigil_t *sgl)
 
     switch (sgl->subfilter) {
         case SUBFILTER_adbe_x509_rsa_sha1:
+            err = sigil_verify_adbe_x509_rsa_sha1(sgl);
+            if (err != ERR_NO)
+                return err;
 
-            break;
+            return ERR_NO;
         default:
             return ERR_NOT_IMPLEMENTED;
     }
@@ -270,7 +289,7 @@ static void range_free(range_t *range)
     free(range);
 }
 
-static void cert_free(cert_t *cert)
+void cert_free(cert_t *cert)
 {
     if (cert == NULL)
         return;
@@ -281,6 +300,18 @@ static void cert_free(cert_t *cert)
         free(cert->cert_hex);
 
     free(cert);
+}
+
+void contents_free(sigil_t *sgl)
+{
+    if (sgl == NULL || sgl->contents == NULL)
+        return;
+
+    if (sgl->contents->contents_hex != NULL)
+        free(sgl->contents->contents_hex);
+
+    free(sgl->contents);
+    sgl->contents = NULL;
 }
 
 void sigil_free(sigil_t **sgl)
@@ -318,12 +349,8 @@ void sigil_free(sigil_t **sgl)
     if ((*sgl)->certificates != NULL)
         cert_free((*sgl)->certificates);
 
-    if ((*sgl)->contents != NULL) {
-        if ((*sgl)->contents->contents_hex != NULL)
-            free((*sgl)->contents->contents_hex);
-
-        free((*sgl)->contents);
-    }
+    if ((*sgl)->contents != NULL)
+        contents_free(*sgl);
 
     free(*sgl);
     *sgl = NULL;
@@ -349,6 +376,26 @@ int sigil_sigil_self_test(int verbosity)
     }
 
     print_test_result(1, verbosity);
+
+    // TEST: correct value of file size
+    print_test_item("file size", verbosity);
+
+    {
+        sgl = test_prepare_sgl_path("test/EduLib__adbe.x509.rsa_sha1.pdf");
+        if (sgl == NULL)
+            goto failed;
+
+        if (sgl->pdf_data.size != 60457)
+            goto failed;
+
+        // TODO test verification result
+
+        sigil_free(&sgl);
+    }
+
+    print_test_result(1, verbosity);
+
+
 
     // TEST: fn sigil_verify with subfilter x509.rsa_sha1
     print_test_item("VERIFY x509.rsa_sha1", verbosity);

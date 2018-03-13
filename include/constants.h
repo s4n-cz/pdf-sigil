@@ -46,5 +46,6 @@
 #define ERR_NO_DATA           6
 #define ERR_END_OF_DICT       7
 #define ERR_NO_SIGNATURE      8
+#define ERR_OPENSSL           9
 
 #endif /* PDF_SIGIL_CONSTANTS_H */

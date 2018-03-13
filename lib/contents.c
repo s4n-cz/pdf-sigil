@@ -5,6 +5,7 @@
 #include "constants.h"
 #include "contents.h"
 #include "types.h"
+#include "sigil.h"
 
 
 sigil_err_t parse_contents(sigil_t *sgl)
@@ -21,7 +22,7 @@ sigil_err_t parse_contents(sigil_t *sgl)
         return err;
 
     if (sgl->contents != NULL)
-        ; // TODO free contents
+        contents_free(sgl);
 
     if ((err = parse_word(sgl, "<")) != ERR_NO)
         return err;
