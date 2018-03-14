@@ -190,3 +190,57 @@ sigil_err_t load_certificates(sigil_t *sgl)
 
     return ERR_NO;
 }
+
+sigil_err_t verify_signing_certificate(sigil_t *sgl)
+{
+    X509_STORE_CTX *ctx;
+    cert_t *additional_cert;
+    STACK_OF(X509) *trusted_chain;
+
+    if (sgl == NULL || sgl->certificates == NULL)
+        return ERR_PARAMETER;
+
+    trusted_chain = sk_X509_new_null();
+
+    additional_cert = sgl->certificates->next;
+
+    while (additional_cert != NULL) {
+        if (sk_X509_push(trusted_chain, additional_cert->x509) == 0) {
+            sk_X509_free(trusted_chain);
+            return ERR_OPENSSL;
+        }
+
+        additional_cert = additional_cert->next;
+    }
+
+    ctx = X509_STORE_CTX_new();
+    if (ctx == NULL) {
+        sk_X509_free(trusted_chain);
+        return ERR_OPENSSL;
+    }
+
+    // initialize store context
+    if (X509_STORE_CTX_init(ctx, sgl->trusted_store, sgl->certificates->x509, trusted_chain) != 1) {
+        sk_X509_free(trusted_chain);
+        return ERR_OPENSSL;
+    }
+
+
+    // signing certificate to be verified
+    X509_STORE_CTX_set_cert(ctx, sgl->certificates->x509);
+
+    // verify
+    if (X509_verify_cert(ctx) == 1) {
+        // verification successful
+        sgl->signing_cert_status = CERT_STATUS_VERIFIED;
+    } else {
+        // verification not successful
+        sgl->signing_cert_status = CERT_STATUS_FAILED;
+    }
+
+    sk_X509_free(trusted_chain);
+
+    X509_STORE_CTX_free(ctx);
+
+    return ERR_NO;
+}

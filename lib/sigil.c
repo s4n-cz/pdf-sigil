@@ -61,7 +61,9 @@ sigil_err_t sigil_init(sigil_t **sgl)
     (*sgl)->certificates                    = NULL;
     (*sgl)->contents                        = NULL;
     (*sgl)->computed_hash_len               = 0;
+    (*sgl)->signing_cert_status             = CERT_STATUS_UNKNOWN;
 
+    (*sgl)->trusted_store = X509_STORE_new();
 
     return ERR_NO;
 }
@@ -187,6 +189,48 @@ sigil_err_t sigil_set_pdf_buffer(sigil_t *sgl, char *pdf_content, size_t size)
     return ERR_NO;
 }
 
+sigil_err_t sigil_set_trusted_default_system(sigil_t *sgl)
+{
+    if (sgl == NULL)
+        return ERR_PARAMETER;
+
+    if (sgl->trusted_store == NULL)
+        return ERR_OPENSSL;
+
+    if (X509_STORE_set_default_paths(sgl->trusted_store) != 1)
+        return ERR_OPENSSL;
+
+    return ERR_NO;
+}
+
+sigil_err_t sigil_set_trusted_file(sigil_t *sgl, const char *path_to_file)
+{
+    if (sgl == NULL || path_to_file == NULL)
+        return ERR_PARAMETER;
+
+    if (sgl->trusted_store == NULL)
+        return ERR_OPENSSL;
+
+    if (X509_STORE_load_locations(sgl->trusted_store, path_to_file, NULL) != 1)
+        return ERR_OPENSSL;
+
+    return ERR_NO;
+}
+
+sigil_err_t sigil_set_trusted_dir(sigil_t *sgl, const char *path_to_dir)
+{
+    if (sgl == NULL || path_to_dir == NULL)
+        return ERR_PARAMETER;
+
+    if (sgl->trusted_store == NULL)
+        return ERR_OPENSSL;
+
+    if (X509_STORE_load_locations(sgl->trusted_store, NULL, path_to_dir) != 1)
+        return ERR_OPENSSL;
+
+    return ERR_NO;
+}
+
 static sigil_err_t sigil_verify_adbe_x509_rsa_sha1(sigil_t *sgl)
 {
     sigil_err_t err;
@@ -199,6 +243,10 @@ static sigil_err_t sigil_verify_adbe_x509_rsa_sha1(sigil_t *sgl)
     print_computed_hash(sgl);
 
     err = load_certificates(sgl);
+    if (err != ERR_NO)
+        return err;
+
+    err = verify_signing_certificate(sgl);
     if (err != ERR_NO)
         return err;
 
@@ -363,6 +411,9 @@ void sigil_free(sigil_t **sgl)
     if ((*sgl)->contents != NULL)
         contents_free(*sgl);
 
+    if ((*sgl)->trusted_store != NULL)
+        X509_STORE_free((*sgl)->trusted_store);
+
     free(*sgl);
     *sgl = NULL;
 }
@@ -414,6 +465,9 @@ int sigil_sigil_self_test(int verbosity)
     {
         sgl = test_prepare_sgl_path("test/EduLib__adbe.x509.rsa_sha1.pdf");
         if (sgl == NULL)
+            goto failed;
+
+        if (sigil_set_trusted_default_system(sgl) != ERR_NO)
             goto failed;
 
         if (sigil_verify(sgl) != ERR_NO || 1)

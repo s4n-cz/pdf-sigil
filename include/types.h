@@ -88,6 +88,8 @@ typedef struct {
     contents_t    *contents;
     unsigned char  computed_hash[EVP_MAX_MD_SIZE];
     unsigned int   computed_hash_len;
+    int            signing_cert_status;
+    X509_STORE    *trusted_store;
 } sigil_t;
 
 #endif /* PDF_SIGIL_TYPES_H */

@@ -34,6 +34,10 @@
 #define SUBFILTER_UNKNOWN               0
 #define SUBFILTER_adbe_x509_rsa_sha1    1
 
+#define CERT_STATUS_UNKNOWN   0
+#define CERT_STATUS_VERIFIED  1
+#define CERT_STATUS_FAILED    2
+
 #define DEALLOCATE_FILE       0x01
 #define DEALLOCATE_BUFFER     0x02
 
