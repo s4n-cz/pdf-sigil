@@ -2,6 +2,7 @@
 #define PDF_SIGIL_TYPES_H
 
 #include <openssl/evp.h> // EVP_MAX_MD_SIZE
+#include <openssl/x509.h>
 #include <stdint.h> // uint32_t
 #include <stdio.h>
 
@@ -28,9 +29,9 @@ typedef struct {
 } contents_t;
 
 typedef struct cert_t {
-    char  *cert_hex;
-    X509  *x509;
-    size_t capacity;
+    char     *cert_hex;
+    X509     *x509;
+    size_t    capacity;
     struct cert_t *next;
 } cert_t;
 
@@ -67,29 +68,31 @@ typedef struct {
 } pdf_data_t;
 
 typedef struct {
-    pdf_data_t     pdf_data;
-    short          pdf_x,             /* numbers from PDF header */
-                   pdf_y;             /*   %PDF-<pdf_x>.<pdf_y>  */
-    short          xref_type;
-    xref_t        *xref;
-    reference_t    ref_catalog_dict;
-    reference_t    ref_acroform;
-    size_t         offset_acroform;
-    reference_t    ref_sig_field;
-    reference_t    ref_sig_dict;
-    size_t         offset_sig_dict;
-    ref_array_t    fields;
-    size_t         pdf_start_offset;  /* offset of %PDF-x.y      */
-    size_t         startxref;
-    size_t         sig_flags;
-    subfilter_t    subfilter;
-    range_t       *byte_range;
-    cert_t        *certificates;
-    contents_t    *contents;
-    unsigned char  computed_hash[EVP_MAX_MD_SIZE];
-    unsigned int   computed_hash_len;
-    int            signing_cert_status;
-    X509_STORE    *trusted_store;
+    pdf_data_t         pdf_data;
+    short              pdf_x,             /* numbers from PDF header */
+                       pdf_y;             /*   %PDF-<pdf_x>.<pdf_y>  */
+    short              xref_type;
+    xref_t            *xref;
+    reference_t        ref_catalog_dict;
+    reference_t        ref_acroform;
+    size_t             offset_acroform;
+    reference_t        ref_sig_field;
+    reference_t        ref_sig_dict;
+    size_t             offset_sig_dict;
+    ref_array_t        fields;
+    size_t             pdf_start_offset;  /* offset of %PDF-x.y      */
+    size_t             startxref;
+    size_t             sig_flags;
+    subfilter_t        subfilter;
+    range_t           *byte_range;
+    cert_t            *certificates;
+    contents_t        *contents;
+    ASN1_OCTET_STRING *computed_digest;
+    int                signing_cert_status;
+    int                hash_cmp_result;
+    X509_ALGOR        *md_algorithm;
+    ASN1_OCTET_STRING *md_hash;
+    X509_STORE        *trusted_store;
 } sigil_t;
 
 #endif /* PDF_SIGIL_TYPES_H */

@@ -638,6 +638,12 @@ const char *sigil_err_string(sigil_err_t err)
             return "ERROR no data available";
         case ERR_END_OF_DICT:
             return "ERROR end of dictionary occured while processing it's content";
+        case ERR_NO_SIGNATURE:
+            return "ERROR this file appears to be missing the signature";
+        case ERR_OPENSSL:
+            return "ERROR something bad happened inside of OpenSSL functionality";
+        case ERR_DIGEST_TYPE:
+            return "ERROR the signature is using not standard message digest";
         default:
             return "ERROR unknown";
     }

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <types.h>
+#include <openssl/bio.h>
 #include <openssl/x509.h>
 #include "acroform.h"
 #include "auxiliary.h"
@@ -17,6 +18,8 @@
 #include "types.h"
 #include "xref.h"
 
+#include <openssl/err.h>
+
 sigil_err_t sigil_init(sigil_t **sgl)
 {
     // function parameter checks
@@ -28,8 +31,6 @@ sigil_err_t sigil_init(sigil_t **sgl)
         return ERR_ALLOCATION;
 
     sigil_zeroize(*sgl, sizeof(*sgl));
-    sigil_zeroize((*sgl)->computed_hash,
-                  sizeof(*(*sgl)->computed_hash) * EVP_MAX_MD_SIZE);
 
     // set default values
     (*sgl)->pdf_data.file                   = NULL;
@@ -60,8 +61,11 @@ sigil_err_t sigil_init(sigil_t **sgl)
     (*sgl)->byte_range                      = NULL;
     (*sgl)->certificates                    = NULL;
     (*sgl)->contents                        = NULL;
-    (*sgl)->computed_hash_len               = 0;
+    (*sgl)->computed_digest                 = NULL;
     (*sgl)->signing_cert_status             = CERT_STATUS_UNKNOWN;
+    (*sgl)->hash_cmp_result                 = HASH_CMP_RESULT_UNKNOWN;
+    (*sgl)->md_algorithm                    = NULL;
+    (*sgl)->md_hash                         = NULL;
 
     (*sgl)->trusted_store = X509_STORE_new();
 
@@ -160,7 +164,7 @@ sigil_err_t sigil_set_pdf_path(sigil_t *sgl, const char *path_to_pdf)
         {
             free(path_to_pdf_win);
             return ERR_IO;
-        }
+        }// MultiByteToWideChar TODO
 
         if (_wfopen_s(&pdf_file, path_to_pdf_win, L"rb") != 0) {
             free(path_to_pdf_win);
@@ -235,13 +239,6 @@ static sigil_err_t sigil_verify_adbe_x509_rsa_sha1(sigil_t *sgl)
 {
     sigil_err_t err;
 
-    err = compute_sha1_hash_over_range(sgl);
-    if (err != ERR_NO)
-        return err;
-
-    // TODO remove
-    print_computed_hash(sgl);
-
     err = load_certificates(sgl);
     if (err != ERR_NO)
         return err;
@@ -250,7 +247,11 @@ static sigil_err_t sigil_verify_adbe_x509_rsa_sha1(sigil_t *sgl)
     if (err != ERR_NO)
         return err;
 
+    err = load_digest(sgl);
+    if (err != ERR_NO)
+        return err;
 
+    return verify_digest(sgl, &(sgl->hash_cmp_result));
 }
 
 sigil_err_t sigil_verify(sigil_t *sgl)
@@ -411,6 +412,15 @@ void sigil_free(sigil_t **sgl)
     if ((*sgl)->contents != NULL)
         contents_free(*sgl);
 
+    if ((*sgl)->computed_digest != NULL)
+        ASN1_OCTET_STRING_free((*sgl)->computed_digest);
+
+    if ((*sgl)->md_algorithm != NULL)
+        X509_ALGOR_free((*sgl)->md_algorithm);
+
+    if ((*sgl)->md_hash != NULL)
+        ASN1_OCTET_STRING_free((*sgl)->md_hash);
+
     if ((*sgl)->trusted_store != NULL)
         X509_STORE_free((*sgl)->trusted_store);
 
@@ -470,7 +480,7 @@ int sigil_sigil_self_test(int verbosity)
         if (sigil_set_trusted_default_system(sgl) != ERR_NO)
             goto failed;
 
-        if (sigil_verify(sgl) != ERR_NO || 1)
+        if (sigil_verify(sgl) != ERR_NO)
             goto failed;
 
         // TODO test verification result

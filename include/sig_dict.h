@@ -6,6 +6,6 @@
 
 sigil_err_t process_sig_dict(sigil_t *sgl);
 
-int sigil_sigil_self_test(int verbosity);
+int sigil_sig_dict_self_test(int verbosity);
 
 #endif /* PDF_SIGIL_SIG_DICT_H */

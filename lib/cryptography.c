@@ -1,3 +1,4 @@
+#include <openssl/asn1.h>
 #include <openssl/evp.h>
 #include <openssl/x509.h>
 #include <types.h>
@@ -50,46 +51,70 @@ sigil_err_t hex_to_dec(const char *in, size_t in_len, unsigned char *out, size_t
     return ERR_NO;
 }
 
-void print_computed_hash(sigil_t *sgl)
-{
-    if (sgl == NULL || sgl->computed_hash_len <= 0)
-        return;
+//void print_computed_hash(sigil_t *sgl)
+//{
+//    if (sgl == NULL || sgl->computed_hash_len <= 0)
+//        return;
+//
+//    printf("\nCOMPUTED HASH: ");
+//
+//    for (int i = 0; i < sgl->computed_hash_len; i++) {
+//        printf("%02x ", sgl->computed_hash[i]);
+//    }
+//
+//    printf("\n");
+//}
 
-    printf("\nCOMPUTED HASH: ");
-
-    for (int i = 0; i < sgl->computed_hash_len; i++) {
-        printf("%02x ", sgl->computed_hash[i]);
-    }
-
-    printf("\n");
-}
-
-sigil_err_t compute_sha1_hash_over_range(sigil_t *sgl)
+sigil_err_t compute_digest_pkcs1(sigil_t *sgl)
 {
     sigil_err_t err;
-    EVP_MD_CTX *ctx;
+    char *update_data = NULL;
+    EVP_MD_CTX *ctx = NULL;
+    const EVP_MD *evp_md;
+    const ASN1_OBJECT *md_obj = NULL;
     range_t *range;
     size_t bytes_left;
-    char *current_data;
     size_t current_length;
     size_t read_size;
+    unsigned char tmp_hash[EVP_MAX_MD_SIZE];
+    unsigned int tmp_hash_len;
 
     if (sgl == NULL || sgl->byte_range == NULL)
         return ERR_PARAMETER;
 
-    current_data = malloc(sizeof(*current_data) * (HASH_UPDATE_SIZE + 1));
-    if (current_data == NULL)
-        return ERR_ALLOCATION;
+    update_data = malloc(sizeof(*update_data) * (HASH_UPDATE_SIZE + 1));
+    if (update_data == NULL) {
+        err = ERR_ALLOCATION;
+        goto end;
+    }
 
-    sigil_zeroize(current_data, sizeof(*current_data) * (HASH_UPDATE_SIZE + 1));
+    sigil_zeroize(update_data, sizeof(*update_data) * (HASH_UPDATE_SIZE + 1));
 
-    // initialize context
+    // initialize digest context
     if ((ctx = EVP_MD_CTX_create()) == NULL)
         return ERR_ALLOCATION;
 
-    if(EVP_DigestInit_ex(ctx, EVP_sha1(), NULL) != 1) {
+    X509_ALGOR_get0(&md_obj, NULL, NULL, sgl->md_algorithm);
+    evp_md = EVP_get_digestbyobj(md_obj);
+    if (evp_md == NULL) {
         err = ERR_OPENSSL;
-        goto failed;
+        goto end;
+    }
+
+    // only allowed algorithms
+    if (EVP_MD_type(evp_md) != NID_sha1   &&
+        EVP_MD_type(evp_md) != NID_sha256 &&
+        EVP_MD_type(evp_md) != NID_sha384 &&
+        EVP_MD_type(evp_md) != NID_sha512 &&
+        EVP_MD_type(evp_md) != NID_ripemd160)
+    {
+        err = ERR_DIGEST_TYPE;
+        goto end;
+    }
+
+    if (EVP_DigestInit_ex(ctx, evp_md, NULL) != 1) {
+        err = ERR_OPENSSL;
+        goto end;
     }
 
     range = sgl->byte_range;
@@ -104,15 +129,15 @@ sigil_err_t compute_sha1_hash_over_range(sigil_t *sgl)
         while (bytes_left > 0) {
             current_length = MIN(HASH_UPDATE_SIZE, bytes_left);
 
-            err = pdf_read(sgl, current_length, current_data, &read_size);
+            err = pdf_read(sgl, current_length, update_data, &read_size);
             if (err != ERR_NO)
                 return err;
             if (current_length != read_size)
                 return ERR_IO;
 
-            if (EVP_DigestUpdate(ctx, current_data, current_length) != 1) {
+            if (EVP_DigestUpdate(ctx, update_data, current_length) != 1) {
                 err = ERR_OPENSSL;
-                goto failed;
+                goto end;
             }
 
             bytes_left -= current_length;
@@ -122,22 +147,24 @@ sigil_err_t compute_sha1_hash_over_range(sigil_t *sgl)
     }
 
     // process last pieces of data from context
-    if (EVP_DigestFinal_ex(ctx, sgl->computed_hash, &(sgl->computed_hash_len)) != 1) {
+    if (EVP_DigestFinal_ex(ctx, tmp_hash, &tmp_hash_len) != 1) {
         err = ERR_OPENSSL;
-        goto failed;
+        goto end;
     }
 
-    free(current_data);
+    sgl->computed_digest = ASN1_OCTET_STRING_new();
+    if (ASN1_OCTET_STRING_set(sgl->computed_digest, tmp_hash, tmp_hash_len) == 0) {
+        err = ERR_OPENSSL;
+        goto end;
+    }
 
-    EVP_MD_CTX_destroy(ctx);
+    err = ERR_NO;
 
-    return ERR_NO;
-
-failed:
+end:
+    if (update_data != NULL)
+        free(update_data);
     if (ctx != NULL)
         EVP_MD_CTX_destroy(ctx);
-
-    free(current_data);
 
     return err;
 }
@@ -189,6 +216,114 @@ sigil_err_t load_certificates(sigil_t *sgl)
     }
 
     return ERR_NO;
+}
+
+sigil_err_t load_digest(sigil_t *sgl)
+{
+    sigil_err_t              err;
+    char                    *contents;
+    size_t                   contents_len;
+    unsigned char           *tmp_contents = NULL;
+    size_t                   tmp_contents_len;
+    const unsigned char     *const_tmp;
+    ASN1_OCTET_STRING       *oc_str = NULL;
+    EVP_PKEY                *pub_key = NULL;
+    RSA                     *rsa = NULL;
+    unsigned char           *rsa_out_str = NULL;
+    int                      rsa_out_len;
+    const unsigned char     *const_rsa_out;
+    X509_SIG                *sig = NULL;
+    const X509_SIG          *const_sig = NULL;
+    const X509_ALGOR        *tmp_alg = NULL;
+    const ASN1_OCTET_STRING *tmp_hash = NULL;
+
+    contents = sgl->contents->contents_hex;
+    contents_len = strlen(contents);
+
+    tmp_contents = malloc(sizeof(*contents) * ((contents_len + 1) / 2 + 1));
+    if (tmp_contents == NULL) {
+        err = ERR_ALLOCATION;
+        goto end;
+    }
+
+    sigil_zeroize(tmp_contents, sizeof(*contents) * ((contents_len + 1) / 2 + 1));
+
+    err = hex_to_dec(contents, contents_len, tmp_contents, &tmp_contents_len);
+    if (err != ERR_NO)
+        goto end;
+
+    const_tmp = tmp_contents;
+
+    oc_str = d2i_ASN1_OCTET_STRING(NULL, &const_tmp, tmp_contents_len);
+    if (oc_str == NULL) {
+        err = ERR_OPENSSL;
+        goto end;
+    }
+
+    pub_key = X509_get_pubkey(sgl->certificates->x509);
+    if (pub_key == NULL) {
+        err = ERR_OPENSSL;
+        goto end;
+    }
+
+    rsa = EVP_PKEY_get1_RSA(pub_key);
+    if (rsa == NULL) {
+        err = ERR_OPENSSL;
+        goto end;
+    }
+
+    rsa_out_len = RSA_size(rsa) - 11;
+    if (rsa_out_len <= 0) {
+        err = ERR_OPENSSL;
+        goto end;
+    }
+
+    rsa_out_str = malloc(sizeof(*rsa_out_str) * rsa_out_len);
+    if (rsa_out_str == NULL) {
+        err = ERR_OPENSSL;
+        goto end;
+    }
+
+    sigil_zeroize(rsa_out_str, sizeof(*rsa_out_str) * rsa_out_len);
+
+    rsa_out_len = RSA_public_decrypt(ASN1_STRING_length(oc_str),
+                                     oc_str->data,
+                                     rsa_out_str,
+                                     rsa,
+                                     RSA_PKCS1_PADDING);
+
+    const_rsa_out = rsa_out_str;
+
+    sig = d2i_X509_SIG(NULL, &const_rsa_out, rsa_out_len);
+    if (sig == NULL) {
+        err = ERR_OPENSSL;
+        goto end;
+    }
+
+    const_sig = sig;
+
+    X509_SIG_get0(const_sig, &tmp_alg, &tmp_hash);
+
+    sgl->md_algorithm = X509_ALGOR_dup((X509_ALGOR *)tmp_alg);
+    sgl->md_hash = ASN1_OCTET_STRING_dup(tmp_hash);
+
+    err = ERR_NO;
+
+end:
+    if (tmp_contents != NULL)
+        free(tmp_contents);
+    if (oc_str != NULL)
+        ASN1_OCTET_STRING_free(oc_str);
+    if (pub_key != NULL)
+        EVP_PKEY_free(pub_key);
+    if (rsa != NULL)
+        RSA_free(rsa);
+    if (rsa_out_str != NULL)
+        free(rsa_out_str);
+    if (sig != NULL)
+        X509_SIG_free(sig);
+
+    return err;
 }
 
 sigil_err_t verify_signing_certificate(sigil_t *sgl)
@@ -243,4 +378,33 @@ sigil_err_t verify_signing_certificate(sigil_t *sgl)
     X509_STORE_CTX_free(ctx);
 
     return ERR_NO;
+}
+
+sigil_err_t compare_digest(sigil_t *sgl)
+{
+    if (sgl == NULL)
+        return ERR_PARAMETER;
+
+    sgl->hash_cmp_result = HASH_CMP_RESULT_DIFFER;
+
+    if (ASN1_STRING_cmp(sgl->md_hash, sgl->computed_digest) == 0)
+        sgl->hash_cmp_result = HASH_CMP_RESULT_MATCH;
+
+    return ERR_NO;
+}
+
+sigil_err_t verify_digest(sigil_t *sgl, int *result)
+{
+    sigil_err_t err;
+
+    *result = 1;
+
+    if (sgl == NULL)
+        return ERR_PARAMETER;
+
+    err = compute_digest_pkcs1(sgl);
+    if (err != ERR_NO)
+        return err;
+
+    return compare_digest(sgl);
 }
