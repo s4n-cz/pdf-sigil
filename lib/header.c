@@ -52,7 +52,7 @@ sigil_err_t process_header(sigil_t *sgl)
             return ERR_PDF_CONTENT;
         }
 
-        sgl->pdf_start_offset = offset;
+        sgl->offset_pdf_start = offset;
 
         return ERR_NO;
     }
@@ -78,7 +78,7 @@ int sigil_header_self_test(int verbosity)
         if (process_header(sgl) != ERR_NO ||
             sgl->pdf_x != 1               ||
             sgl->pdf_y != 1               ||
-            sgl->pdf_start_offset != 0)
+            sgl->offset_pdf_start != 0)
         {
             goto failed;
         }
@@ -101,7 +101,7 @@ int sigil_header_self_test(int verbosity)
         if (process_header(sgl) != ERR_NO ||
             sgl->pdf_x != 1               ||
             sgl->pdf_y != 2               ||
-            sgl->pdf_start_offset != 50)
+            sgl->offset_pdf_start != 50)
         {
             goto failed;
         }

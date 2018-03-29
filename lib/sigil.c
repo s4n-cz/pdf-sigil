@@ -36,34 +36,33 @@ sigil_err_t sigil_init(sigil_t **sgl)
     (*sgl)->pdf_data.deallocation_info      = 0;
     (*sgl)->pdf_x                           = 0;
     (*sgl)->pdf_y                           = 0;
+    (*sgl)->sig_flags                       = 0;
+    (*sgl)->subfilter_type                  = SUBFILTER_UNKNOWN;
     (*sgl)->xref_type                       = XREF_TYPE_UNSET;
-    (*sgl)->xref                            = NULL;
-    (*sgl)->ref_catalog_dict.object_num     = 0;
-    (*sgl)->ref_catalog_dict.generation_num = 0;
     (*sgl)->ref_acroform.object_num         = 0;
     (*sgl)->ref_acroform.generation_num     = 0;
-    (*sgl)->offset_acroform                 = 0;
-    (*sgl)->ref_sig_field.object_num        = 0;
-    (*sgl)->ref_sig_field.generation_num    = 0;
+    (*sgl)->ref_catalog_dict.object_num     = 0;
+    (*sgl)->ref_catalog_dict.generation_num = 0;
     (*sgl)->ref_sig_dict.object_num         = 0;
     (*sgl)->ref_sig_dict.generation_num     = 0;
+    (*sgl)->ref_sig_field.object_num        = 0;
+    (*sgl)->ref_sig_field.generation_num    = 0;
+    (*sgl)->offset_acroform                 = 0;
+    (*sgl)->offset_pdf_start                = 0;
     (*sgl)->offset_sig_dict                 = 0;
-    (*sgl)->fields.entry                    = NULL;
+    (*sgl)->offset_startxref                = 0;
+    (*sgl)->digest_algorithm                = NULL;
+    (*sgl)->digest_computed                 = NULL;
+    (*sgl)->digest_original                 = NULL;
     (*sgl)->fields.capacity                 = 0;
-    (*sgl)->pdf_start_offset                = 0;
-    (*sgl)->startxref                       = 0;
-    (*sgl)->sig_flags                       = 0;
-    (*sgl)->subfilter                       = SUBFILTER_UNKNOWN;
+    (*sgl)->fields.entry                    = NULL;
     (*sgl)->byte_range                      = NULL;
     (*sgl)->certificates                    = NULL;
     (*sgl)->contents                        = NULL;
-    (*sgl)->computed_digest                 = NULL;
-    (*sgl)->signing_cert_status             = CERT_STATUS_UNKNOWN;
-    (*sgl)->hash_cmp_result                 = HASH_CMP_RESULT_UNKNOWN;
-    (*sgl)->md_algorithm                    = NULL;
-    (*sgl)->md_hash                         = NULL;
-
-    (*sgl)->trusted_store = X509_STORE_new();
+    (*sgl)->xref                            = NULL;
+    (*sgl)->trusted_store                   = X509_STORE_new();
+    (*sgl)->result_cert_verification        = CERT_STATUS_UNKNOWN;
+    (*sgl)->result_digest_comparison        = HASH_CMP_RESULT_UNKNOWN;
 
     return ERR_NO;
 }
@@ -248,7 +247,7 @@ static sigil_err_t sigil_verify_adbe_x509_rsa_sha1(sigil_t *sgl)
     if (err != ERR_NO)
         return err;
 
-    return verify_digest(sgl, &(sgl->hash_cmp_result));
+    return verify_digest(sgl, &(sgl->result_digest_comparison));
 }
 
 sigil_err_t sigil_verify(sigil_t *sgl)
@@ -275,7 +274,7 @@ sigil_err_t sigil_verify(sigil_t *sgl)
     if (sgl->xref == NULL)
         return ERR_ALLOCATION;
 
-    sgl->xref->prev_section = sgl->startxref;
+    sgl->xref->prev_section = sgl->offset_startxref;
 
     size_t max_file_updates = MAX_FILE_UPDATES;
 
@@ -319,7 +318,7 @@ sigil_err_t sigil_verify(sigil_t *sgl)
     if (err != ERR_NO)
         return err;
 
-    switch (sgl->subfilter) {
+    switch (sgl->subfilter_type) {
         case SUBFILTER_adbe_x509_rsa_sha1:
             err = sigil_verify_adbe_x509_rsa_sha1(sgl);
             if (err != ERR_NO)
@@ -344,7 +343,7 @@ sigil_err_t sigil_get_result(sigil_t *sgl, int *result)
 
     *result = 0;
 
-    switch (sgl->subfilter) {
+    switch (sgl->subfilter_type) {
         case SUBFILTER_adbe_x509_rsa_sha1:
             err = sigil_get_cert_validation_result(sgl, &cert_res);
             if (err != ERR_NO)
@@ -368,7 +367,7 @@ sigil_err_t sigil_get_cert_validation_result(sigil_t *sgl, int *result)
     if (sgl == NULL || result == NULL)
         return ERR_PARAMETER;
 
-    *result = sgl->signing_cert_status;
+    *result = sgl->result_cert_verification;
 
     return ERR_NO;
 }
@@ -378,7 +377,7 @@ sigil_err_t sigil_get_data_integrity_result(sigil_t *sgl, int *result)
     if (sgl == NULL || result == NULL)
         return ERR_PARAMETER;
 
-    *result = sgl->hash_cmp_result;
+    *result = sgl->result_digest_comparison;
 
     return ERR_NO;
 }
@@ -388,10 +387,10 @@ sigil_err_t sigil_get_original_digest(sigil_t *sgl, ASN1_OCTET_STRING **digest)
     if (sgl == NULL || digest == NULL)
         return ERR_PARAMETER;
 
-    if (sgl->md_hash == NULL)
+    if (sgl->digest_original == NULL)
         return ERR_NO_DATA;
 
-    *digest = ASN1_OCTET_STRING_dup(sgl->md_hash);
+    *digest = ASN1_OCTET_STRING_dup(sgl->digest_original);
 
     return ERR_NO;
 }
@@ -401,20 +400,20 @@ sigil_err_t sigil_get_computed_digest(sigil_t *sgl, ASN1_OCTET_STRING **digest)
     if (sgl == NULL || digest == NULL)
         return ERR_PARAMETER;
 
-    if (sgl->computed_digest == NULL)
+    if (sgl->digest_computed == NULL)
         return ERR_NO_DATA;
 
-    *digest = ASN1_OCTET_STRING_dup(sgl->computed_digest);
+    *digest = ASN1_OCTET_STRING_dup(sgl->digest_computed);
 
     return ERR_NO;
 }
 
-sigil_err_t sigil_get_subfilter(sigil_t *sgl, subfilter_t *subfilter)
+sigil_err_t sigil_get_subfilter(sigil_t *sgl, int *subfilter)
 {
     if (sgl == NULL || subfilter == NULL)
         return ERR_PARAMETER;
 
-    *subfilter = sgl->subfilter;
+    *subfilter = sgl->subfilter_type;
 
     return ERR_NO;
 }
@@ -495,14 +494,14 @@ void sigil_free(sigil_t **sgl)
     if ((*sgl)->contents != NULL)
         contents_free(*sgl);
 
-    if ((*sgl)->computed_digest != NULL)
-        ASN1_OCTET_STRING_free((*sgl)->computed_digest);
+    if ((*sgl)->digest_computed != NULL)
+        ASN1_OCTET_STRING_free((*sgl)->digest_computed);
 
-    if ((*sgl)->md_algorithm != NULL)
-        X509_ALGOR_free((*sgl)->md_algorithm);
+    if ((*sgl)->digest_algorithm != NULL)
+        X509_ALGOR_free((*sgl)->digest_algorithm);
 
-    if ((*sgl)->md_hash != NULL)
-        ASN1_OCTET_STRING_free((*sgl)->md_hash);
+    if ((*sgl)->digest_original != NULL)
+        ASN1_OCTET_STRING_free((*sgl)->digest_original);
 
     if ((*sgl)->trusted_store != NULL)
         X509_STORE_free((*sgl)->trusted_store);

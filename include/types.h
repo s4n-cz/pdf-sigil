@@ -14,8 +14,6 @@
 
 typedef uint32_t sigil_err_t;
 
-typedef uint32_t subfilter_t;
-
 typedef uint32_t dict_key_t;
 
 typedef struct {
@@ -68,31 +66,38 @@ typedef struct {
 } pdf_data_t;
 
 typedef struct {
+    // file data
     pdf_data_t         pdf_data;
-    short              pdf_x,             /* numbers from PDF header */
-                       pdf_y;             /*   %PDF-<pdf_x>.<pdf_y>  */
-    short              xref_type;
-    xref_t            *xref;
-    reference_t        ref_catalog_dict;
-    reference_t        ref_acroform;
-    size_t             offset_acroform;
-    reference_t        ref_sig_field;
-    reference_t        ref_sig_dict;
-    size_t             offset_sig_dict;
-    ref_array_t        fields;
-    size_t             pdf_start_offset;  /* offset of %PDF-x.y      */
-    size_t             startxref;
+    // pdf information
+    int                pdf_x; // version from PDF header - <x>.<y>
+    int                pdf_y;
     size_t             sig_flags;
-    subfilter_t        subfilter;
+    int                subfilter_type;
+    int                xref_type;
+    // indirect reference to pdf parts
+    reference_t        ref_acroform;
+    reference_t        ref_catalog_dict;
+    reference_t        ref_sig_dict;
+    reference_t        ref_sig_field;
+    // offset to pdf parts
+    size_t             offset_acroform;
+    size_t             offset_pdf_start;
+    size_t             offset_sig_dict;
+    size_t             offset_startxref;
+    // message digest
+    X509_ALGOR        *digest_algorithm;
+    ASN1_OCTET_STRING *digest_computed;
+    ASN1_OCTET_STRING *digest_original;
+    // extracted parts
+    ref_array_t        fields;
     range_t           *byte_range;
     cert_t            *certificates;
     contents_t        *contents;
-    ASN1_OCTET_STRING *computed_digest;
-    X509_ALGOR        *md_algorithm;
-    ASN1_OCTET_STRING *md_hash;
+    xref_t            *xref;
     X509_STORE        *trusted_store;
-    int                signing_cert_status;
-    int                hash_cmp_result;
+    // results of verification process
+    int                result_cert_verification;
+    int                result_digest_comparison;
 } sigil_t;
 
 #endif /* PDF_SIGIL_TYPES_H */

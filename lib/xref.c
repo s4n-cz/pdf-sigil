@@ -135,9 +135,9 @@ sigil_err_t read_startxref(sigil_t *sgl)
             return ERR_PDF_CONTENT;
 
         if (strncmp(tmp, "startxref", 9) == 0) {
-            if ((err = parse_number(sgl, &(sgl->startxref))) != ERR_NO)
+            if ((err = parse_number(sgl, &(sgl->offset_startxref))) != ERR_NO)
                 return err;
-            if (sgl->startxref == 0)
+            if (sgl->offset_startxref == 0)
                 return ERR_PDF_CONTENT;
 
             return ERR_NO;
@@ -320,7 +320,7 @@ int sigil_xref_self_test(int verbosity)
             goto failed;
 
         if (read_startxref(sgl) != ERR_NO ||
-            sgl->startxref != 1234567890)
+            sgl->offset_startxref != 1234567890)
         {
             goto failed;
         }

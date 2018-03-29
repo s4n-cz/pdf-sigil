@@ -94,7 +94,7 @@ sigil_err_t compute_digest_pkcs1(sigil_t *sgl)
     if ((ctx = EVP_MD_CTX_create()) == NULL)
         return ERR_ALLOCATION;
 
-    X509_ALGOR_get0(&md_obj, NULL, NULL, sgl->md_algorithm);
+    X509_ALGOR_get0(&md_obj, NULL, NULL, sgl->digest_algorithm);
     evp_md = EVP_get_digestbyobj(md_obj);
     if (evp_md == NULL) {
         err = ERR_OPENSSL;
@@ -152,8 +152,8 @@ sigil_err_t compute_digest_pkcs1(sigil_t *sgl)
         goto end;
     }
 
-    sgl->computed_digest = ASN1_OCTET_STRING_new();
-    if (ASN1_OCTET_STRING_set(sgl->computed_digest, tmp_hash, tmp_hash_len) == 0) {
+    sgl->digest_computed = ASN1_OCTET_STRING_new();
+    if (ASN1_OCTET_STRING_set(sgl->digest_computed, tmp_hash, tmp_hash_len) == 0) {
         err = ERR_OPENSSL;
         goto end;
     }
@@ -307,8 +307,8 @@ sigil_err_t load_digest(sigil_t *sgl)
 
     X509_SIG_get0(const_sig, &tmp_alg, &tmp_hash);
 
-    sgl->md_algorithm = X509_ALGOR_dup((X509_ALGOR *)tmp_alg);
-    sgl->md_hash = ASN1_OCTET_STRING_dup(tmp_hash);
+    sgl->digest_algorithm = X509_ALGOR_dup((X509_ALGOR *)tmp_alg);
+    sgl->digest_original = ASN1_OCTET_STRING_dup(tmp_hash);
 
     err = ERR_NO;
 
@@ -370,10 +370,10 @@ sigil_err_t verify_signing_certificate(sigil_t *sgl)
     // verify
     if (X509_verify_cert(ctx) == 1) {
         // verification successful
-        sgl->signing_cert_status = CERT_STATUS_VERIFIED;
+        sgl->result_cert_verification = CERT_STATUS_VERIFIED;
     } else {
         // verification not successful
-        sgl->signing_cert_status = CERT_STATUS_FAILED;
+        sgl->result_cert_verification = CERT_STATUS_FAILED;
     }
 
     sk_X509_free(trusted_chain);
@@ -388,13 +388,13 @@ sigil_err_t compare_digest(sigil_t *sgl)
     if (sgl == NULL)
         return ERR_PARAMETER;
 
-    sgl->hash_cmp_result = HASH_CMP_RESULT_DIFFER;
+    sgl->result_digest_comparison = HASH_CMP_RESULT_DIFFER;
 
-    if (sgl->md_hash == NULL || sgl->computed_digest == NULL)
+    if (sgl->digest_original == NULL || sgl->digest_computed == NULL)
         return ERR_PARAMETER;
 
-    if (ASN1_STRING_cmp(sgl->md_hash, sgl->computed_digest) == 0)
-        sgl->hash_cmp_result = HASH_CMP_RESULT_MATCH;
+    if (ASN1_STRING_cmp(sgl->digest_original, sgl->digest_computed) == 0)
+        sgl->result_digest_comparison = HASH_CMP_RESULT_MATCH;
 
     return ERR_NO;
 }

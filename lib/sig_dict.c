@@ -46,9 +46,9 @@ static sigil_err_t parse_subfilter(sigil_t *sgl)
         return err;
 
     if (strncmp(tmp, "adbe.x509.rsa_sha1", 18) == 0) {
-        sgl->subfilter = SUBFILTER_adbe_x509_rsa_sha1;
+        sgl->subfilter_type = SUBFILTER_adbe_x509_rsa_sha1;
     } else {
-        sgl->subfilter = SUBFILTER_UNKNOWN;
+        sgl->subfilter_type = SUBFILTER_UNKNOWN;
     }
 
     return ERR_NO;
