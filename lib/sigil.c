@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <types.h>
-#include <openssl/bio.h>
-#include <openssl/x509.h>
 #include "acroform.h"
 #include "auxiliary.h"
 #include "catalog_dict.h"
@@ -17,8 +15,6 @@
 #include "trailer.h"
 #include "types.h"
 #include "xref.h"
-
-#include <openssl/err.h>
 
 sigil_err_t sigil_init(sigil_t **sgl)
 {
@@ -139,10 +135,11 @@ sigil_err_t sigil_set_pdf_file(sigil_t *sgl, FILE *pdf_file)
 
 sigil_err_t sigil_set_pdf_path(sigil_t *sgl, const char *path_to_pdf)
 {
-    if (sgl == NULL || path_to_pdf == NULL)
-        return ERR_PARAMETER;
-
     FILE *pdf_file = NULL;
+
+    if (sgl == NULL || path_to_pdf == NULL) {
+        return ERR_PARAMETER;
+    }
 
     #ifdef _WIN32
         // convert path to wchar_t
@@ -473,7 +470,7 @@ int sigil_sigil_self_test(int verbosity)
     print_test_item("VERIFY x509.rsa_sha1", verbosity);
 
     {
-        sgl = test_prepare_sgl_path("test/EduLib__adbe.x509.rsa_sha1.pdf");
+        sgl = test_prepare_sgl_path("test/subtype_adbe.x509.rsa_sha1.pdf");
         if (sgl == NULL)
             goto failed;
 

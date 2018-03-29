@@ -18,6 +18,9 @@ static sigil_err_t parse_subfilter(sigil_t *sgl)
     char tmp[SUBFILTER_MAX],
             c;
 
+    if (sgl == NULL)
+        return ERR_PARAMETER;
+
     sigil_zeroize(tmp, SUBFILTER_MAX * sizeof(*tmp));
 
     err = parse_word(sgl, "/");
@@ -57,6 +60,9 @@ static sigil_err_t parse_byte_range(sigil_t *sgl)
     range_t **byte_range;
     size_t start,
            length;
+
+    if (sgl == NULL)
+        return ERR_PARAMETER;
 
     err = parse_word(sgl, "[");
     if (err != ERR_NO)

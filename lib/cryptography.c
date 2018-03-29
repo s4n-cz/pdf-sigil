@@ -237,6 +237,9 @@ sigil_err_t load_digest(sigil_t *sgl)
     const X509_ALGOR        *tmp_alg = NULL;
     const ASN1_OCTET_STRING *tmp_hash = NULL;
 
+    if (sgl == NULL || sgl->contents == NULL || sgl->certificates)
+        return ERR_PARAMETER;
+
     contents = sgl->contents->contents_hex;
     contents_len = strlen(contents);
 
@@ -387,6 +390,9 @@ sigil_err_t compare_digest(sigil_t *sgl)
 
     sgl->hash_cmp_result = HASH_CMP_RESULT_DIFFER;
 
+    if (sgl->md_hash == NULL || sgl->computed_digest == NULL)
+        return ERR_PARAMETER;
+
     if (ASN1_STRING_cmp(sgl->md_hash, sgl->computed_digest) == 0)
         sgl->hash_cmp_result = HASH_CMP_RESULT_MATCH;
 
@@ -397,10 +403,10 @@ sigil_err_t verify_digest(sigil_t *sgl, int *result)
 {
     sigil_err_t err;
 
-    *result = 1;
-
-    if (sgl == NULL)
+    if (sgl == NULL || *result == NULL)
         return ERR_PARAMETER;
+
+    *result = 1;
 
     err = compute_digest_pkcs1(sgl);
     if (err != ERR_NO)

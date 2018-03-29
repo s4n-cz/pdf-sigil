@@ -4,7 +4,7 @@
 #include "types.h"
 
 
-xref_t *xref_init();
+xref_t *xref_init(void);
 
 void xref_free(xref_t *xref);
 

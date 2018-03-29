@@ -113,6 +113,9 @@ sigil_err_t pdf_peek_char(sigil_t *sgl, char *result)
 {
     sigil_err_t err;
 
+    if (sgl == NULL || result == NULL)
+        return ERR_PARAMETER;
+
     err = pdf_get_char(sgl, result);
     if (err != ERR_NO)
         return err;
@@ -392,6 +395,9 @@ sigil_err_t parse_number(sigil_t *sgl, size_t *number)
     char c;
     int digits = 0;
 
+    if (sgl == NULL || number == NULL)
+        return ERR_PARAMETER;
+
     *number = 0;
 
     err = skip_leading_whitespaces(sgl);
@@ -469,13 +475,16 @@ sigil_err_t parse_indirect_reference(sigil_t *sgl, reference_t *ref)
     return ERR_NO;
 }
 
-// parse the key of the couple key - value in the dictionary
+// parse the key of the pair key - value in the dictionary
 sigil_err_t parse_dict_key(sigil_t *sgl, dict_key_t *dict_key)
 {
     sigil_err_t err;
     int count = 0;
     char tmp[DICT_KEY_MAX],
          c;
+
+    if (sgl == NULL || dict_key == NULL)
+        return ERR_PARAMETER;
 
     sigil_zeroize(tmp, DICT_KEY_MAX * sizeof(*tmp));
 
@@ -599,7 +608,7 @@ sigil_err_t reference_to_offset(sigil_t *sgl, const reference_t *ref, size_t *re
 {
     xref_entry_t *xref_entry;
 
-    if (sgl == NULL || ref == NULL || sgl->xref == NULL)
+    if (sgl == NULL || ref == NULL || sgl->xref == NULL || result == NULL)
         return ERR_PARAMETER;
 
     if (sgl->xref->capacity <= ref->object_num)
@@ -651,7 +660,7 @@ const char *sigil_err_string(sigil_err_t err)
 
 void print_module_name(const char *module_name, int verbosity)
 {
-    if (verbosity < 1)
+    if (verbosity < 1 || module_name == NULL)
         return;
 
     printf("\n + Testing module: %s\n", module_name);
@@ -671,7 +680,7 @@ void print_module_result(int result, int verbosity)
 
 void print_test_item(const char *test_name, int verbosity)
 {
-    if (verbosity < 2)
+    if (verbosity < 2 || test_name == NULL)
         return;
 
     printf("    - %-32s", test_name);
@@ -693,6 +702,9 @@ sigil_t *test_prepare_sgl_content(char *content, size_t size)
 {
     sigil_t *sgl;
 
+    if (content == NULL)
+        return NULL;
+
     if (sigil_init(&sgl) != ERR_NO)
         return NULL;
 
@@ -707,6 +719,9 @@ sigil_t *test_prepare_sgl_content(char *content, size_t size)
 sigil_t *test_prepare_sgl_path(const char *path)
 {
     sigil_t *sgl;
+
+    if (path == NULL)
+        return NULL;
 
     if (sigil_init(&sgl) != ERR_NO)
         return NULL;

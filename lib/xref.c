@@ -13,6 +13,9 @@ static sigil_err_t determine_xref_type(sigil_t *sgl)
     sigil_err_t err;
     char c;
 
+    if (sgl == NULL)
+        return ERR_PARAMETER;
+
     if ((err = pdf_peek_char(sgl, &c)) != ERR_NO)
         return err;
 
@@ -76,7 +79,7 @@ static void free_xref_entry(xref_entry_t *entry)
     }
 }
 
-xref_t *xref_init()
+xref_t *xref_init(void)
 {
     xref_t *xref = malloc(sizeof(xref_t));
     if (xref == NULL)
@@ -152,6 +155,9 @@ sigil_err_t read_xref_table(sigil_t *sgl)
            obj_generation;
     int xref_end = 0;
     sigil_err_t err;
+
+    if (sgl == NULL)
+        return ERR_PARAMETER;
 
     if (sgl->xref == NULL) {
         sgl->xref = xref_init();

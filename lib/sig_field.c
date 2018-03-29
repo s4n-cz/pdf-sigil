@@ -10,6 +10,9 @@ sigil_err_t find_sig_field(sigil_t *sgl)
     dict_key_t dict_key;
     int other_ft;
 
+    if (sgl == NULL)
+        return ERR_PARAMETER;
+
     err = ERR_NO_DATA;
 
     for (size_t i = 0; i < sgl->fields.capacity; i++) {
