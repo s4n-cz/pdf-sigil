@@ -16,7 +16,12 @@ sigil_err_t sigil_set_trusted_dir(sigil_t *sgl, const char *path_to_dir);
 
 sigil_err_t sigil_verify(sigil_t *sgl);
 
-// ... get functions TODO
+sigil_err_t sigil_get_result(sigil_t *sgl, int *result);
+sigil_err_t sigil_get_cert_validation_result(sigil_t *sgl, int *result);
+sigil_err_t sigil_get_data_integrity_result(sigil_t *sgl, int *result);
+sigil_err_t sigil_get_original_digest(sigil_t *sgl, ASN1_OCTET_STRING **digest);
+sigil_err_t sigil_get_computed_digest(sigil_t *sgl, ASN1_OCTET_STRING **digest);
+sigil_err_t sigil_get_subfilter(sigil_t *sgl, subfilter_t *subfilter);
 
 void cert_free(cert_t *cert);
 

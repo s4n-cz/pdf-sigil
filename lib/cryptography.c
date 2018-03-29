@@ -403,7 +403,7 @@ sigil_err_t verify_digest(sigil_t *sgl, int *result)
 {
     sigil_err_t err;
 
-    if (sgl == NULL || *result == NULL)
+    if (sgl == NULL || result == NULL)
         return ERR_PARAMETER;
 
     *result = 1;

@@ -88,11 +88,11 @@ typedef struct {
     cert_t            *certificates;
     contents_t        *contents;
     ASN1_OCTET_STRING *computed_digest;
-    int                signing_cert_status;
-    int                hash_cmp_result;
     X509_ALGOR        *md_algorithm;
     ASN1_OCTET_STRING *md_hash;
     X509_STORE        *trusted_store;
+    int                signing_cert_status;
+    int                hash_cmp_result;
 } sigil_t;
 
 #endif /* PDF_SIGIL_TYPES_H */

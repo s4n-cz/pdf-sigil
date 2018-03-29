@@ -333,6 +333,92 @@ sigil_err_t sigil_verify(sigil_t *sgl)
     return ERR_NO;
 }
 
+sigil_err_t sigil_get_result(sigil_t *sgl, int *result)
+{
+    sigil_err_t err;
+    int cert_res;
+    int digest_res;
+
+    if (sgl == NULL || result == NULL)
+        return ERR_PARAMETER;
+
+    *result = 0;
+
+    switch (sgl->subfilter) {
+        case SUBFILTER_adbe_x509_rsa_sha1:
+            err = sigil_get_cert_validation_result(sgl, &cert_res);
+            if (err != ERR_NO)
+                return err;
+
+            err = sigil_get_data_integrity_result(sgl, &digest_res);
+            if (err != ERR_NO)
+                return err;
+
+            *result = (cert_res == CERT_STATUS_VERIFIED) &&
+                      (digest_res == HASH_CMP_RESULT_MATCH);
+
+            return ERR_NO;
+        default:
+            return ERR_NOT_IMPLEMENTED;
+    }
+}
+
+sigil_err_t sigil_get_cert_validation_result(sigil_t *sgl, int *result)
+{
+    if (sgl == NULL || result == NULL)
+        return ERR_PARAMETER;
+
+    *result = sgl->signing_cert_status;
+
+    return ERR_NO;
+}
+
+sigil_err_t sigil_get_data_integrity_result(sigil_t *sgl, int *result)
+{
+    if (sgl == NULL || result == NULL)
+        return ERR_PARAMETER;
+
+    *result = sgl->hash_cmp_result;
+
+    return ERR_NO;
+}
+
+sigil_err_t sigil_get_original_digest(sigil_t *sgl, ASN1_OCTET_STRING **digest)
+{
+    if (sgl == NULL || digest == NULL)
+        return ERR_PARAMETER;
+
+    if (sgl->md_hash == NULL)
+        return ERR_NO_DATA;
+
+    *digest = ASN1_OCTET_STRING_dup(sgl->md_hash);
+
+    return ERR_NO;
+}
+
+sigil_err_t sigil_get_computed_digest(sigil_t *sgl, ASN1_OCTET_STRING **digest)
+{
+    if (sgl == NULL || digest == NULL)
+        return ERR_PARAMETER;
+
+    if (sgl->computed_digest == NULL)
+        return ERR_NO_DATA;
+
+    *digest = ASN1_OCTET_STRING_dup(sgl->computed_digest);
+
+    return ERR_NO;
+}
+
+sigil_err_t sigil_get_subfilter(sigil_t *sgl, subfilter_t *subfilter)
+{
+    if (sgl == NULL || subfilter == NULL)
+        return ERR_PARAMETER;
+
+    *subfilter = sgl->subfilter;
+
+    return ERR_NO;
+}
+
 static void range_free(range_t *range)
 {
     if (range == NULL)
