@@ -189,7 +189,7 @@ sigil_err_t sigil_set_pdf_buffer(sigil_t *sgl, char *pdf_content, size_t size)
     return ERR_NO;
 }
 
-sigil_err_t sigil_set_trusted_default_system(sigil_t *sgl)
+sigil_err_t sigil_set_trusted_system(sigil_t *sgl)
 {
     if (sgl == NULL)
         return ERR_PARAMETER;
@@ -510,6 +510,36 @@ void sigil_free(sigil_t **sgl)
     *sgl = NULL;
 }
 
+const char *sigil_err_string(sigil_err_t err)
+{
+    switch (err) {
+        case ERR_NO:
+            return "finished without any error";
+        case ERR_ALLOCATION:
+            return "ERROR during allocation";
+        case ERR_PARAMETER:
+            return "ERROR bad data between function parameters";
+        case ERR_IO:
+            return "ERROR during performing input/output operation";
+        case ERR_PDF_CONTENT:
+            return "ERROR unexpected data on input, probably corrupted PDF file";
+        case ERR_NOT_IMPLEMENTED:
+            return "ERROR this functionality is not currently available";
+        case ERR_NO_DATA:
+            return "ERROR no data available";
+        case ERR_END_OF_DICT:
+            return "ERROR end of dictionary occured while processing it's content";
+        case ERR_NO_SIGNATURE:
+            return "ERROR this file appears to be missing the signature";
+        case ERR_OPENSSL:
+            return "ERROR something bad happened inside of OpenSSL functionality";
+        case ERR_DIGEST_TYPE:
+            return "ERROR the signature is using not standard message digest";
+        default:
+            return "ERROR unknown";
+    }
+}
+
 int sigil_sigil_self_test(int verbosity)
 {
     sigil_err_t err;
@@ -559,7 +589,7 @@ int sigil_sigil_self_test(int verbosity)
         if (sgl == NULL)
             goto failed;
 
-        if (sigil_set_trusted_default_system(sgl) != ERR_NO)
+        if (sigil_set_trusted_system(sgl) != ERR_NO)
             goto failed;
 
         if (sigil_verify(sgl) != ERR_NO)

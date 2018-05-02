@@ -10,7 +10,7 @@ sigil_err_t sigil_set_pdf_file(sigil_t *sgl, FILE *pdf_file);
 sigil_err_t sigil_set_pdf_path(sigil_t *sgl, const char *path_to_pdf);
 sigil_err_t sigil_set_pdf_buffer(sigil_t *sgl, char *pdf_content, size_t size);
 
-sigil_err_t sigil_set_trusted_default_system(sigil_t *sgl);
+sigil_err_t sigil_set_trusted_system(sigil_t *sgl);
 sigil_err_t sigil_set_trusted_file(sigil_t *sgl, const char *path_to_file);
 sigil_err_t sigil_set_trusted_dir(sigil_t *sgl, const char *path_to_dir);
 
@@ -28,6 +28,8 @@ void cert_free(cert_t *cert);
 void contents_free(sigil_t *sgl);
 
 void sigil_free(sigil_t **sgl);
+
+const char *sigil_err_string(sigil_err_t err);
 
 int sigil_sigil_self_test(int verbosity);
 

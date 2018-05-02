@@ -237,7 +237,7 @@ sigil_err_t load_digest(sigil_t *sgl)
     const X509_ALGOR        *tmp_alg = NULL;
     const ASN1_OCTET_STRING *tmp_hash = NULL;
 
-    if (sgl == NULL || sgl->contents == NULL || sgl->certificates)
+    if (sgl == NULL || sgl->contents == NULL || sgl->certificates == NULL)
         return ERR_PARAMETER;
 
     contents = sgl->contents->contents_hex;

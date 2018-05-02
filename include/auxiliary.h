@@ -37,8 +37,6 @@ sigil_err_t parse_ref_array(sigil_t *sgl, ref_array_t *ref_array);
 
 sigil_err_t reference_to_offset(sigil_t *sgl, const reference_t *ref, size_t *result);
 
-const char *sigil_err_string(sigil_err_t err);
-
 void print_module_name(const char *module_name, int verbosity);
 void print_module_result(int result, int verbosity);
 void print_test_item(const char *test_name, int verbosity);

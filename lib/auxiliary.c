@@ -628,36 +628,6 @@ sigil_err_t reference_to_offset(sigil_t *sgl, const reference_t *ref, size_t *re
     return ERR_NO_DATA;
 }
 
-const char *sigil_err_string(sigil_err_t err)
-{
-    switch (err) {
-        case ERR_NO:
-            return "finished without any error";
-        case ERR_ALLOCATION:
-            return "ERROR during allocation";
-        case ERR_PARAMETER:
-            return "ERROR bad data between function parameters";
-        case ERR_IO:
-            return "ERROR during performing input/output operation";
-        case ERR_PDF_CONTENT:
-            return "ERROR unexpected data on input, probably corrupted PDF file";
-        case ERR_NOT_IMPLEMENTED:
-            return "ERROR this functionality is not currently available";
-        case ERR_NO_DATA:
-            return "ERROR no data available";
-        case ERR_END_OF_DICT:
-            return "ERROR end of dictionary occured while processing it's content";
-        case ERR_NO_SIGNATURE:
-            return "ERROR this file appears to be missing the signature";
-        case ERR_OPENSSL:
-            return "ERROR something bad happened inside of OpenSSL functionality";
-        case ERR_DIGEST_TYPE:
-            return "ERROR the signature is using not standard message digest";
-        default:
-            return "ERROR unknown";
-    }
-}
-
 void print_module_name(const char *module_name, int verbosity)
 {
     if (verbosity < 1 || module_name == NULL)

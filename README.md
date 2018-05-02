@@ -10,15 +10,16 @@ Word **sigil** in name stands for latin word *sigillum*, which means **seal** or
 Performs build with output into "build" directory. After those steps, there will be a **static and shared library** and also **selftest executable**.
 
 ```shell
-cmake -E make_directory build
-cmake -E chdir build cmake ..
-cmake -E chdir build make
+mkdir build
+cd build
+cmake ..
+make
 ```
 
-The selftest is run automatically during the make, but if you want to re-run it, use one of the following commands:
+The selftest is run automatically during the make, but if you want to re-run it, use one of the following commands (from the build directory):
 
 ```shell
-cmake -E chdir build make run_tests # producing default output level
-cmake -E chdir build make run_tests_verbose # verbose output level
-cmake -E chdir build make run_tests_quiet # without output
+make run_tests # producing default output level
+make run_tests_verbose # verbose output level
+make run_tests_quiet # without output
 ```

@@ -17,17 +17,17 @@ file(GLOB LIB_SRC "lib/*.c")
 set (TEST_SRC "test/test.c")
 
 # build both static and shared library
-add_library(pdf-sigil_static STATIC ${LIB_SRC})
-add_library(pdf-sigil_shared SHARED ${LIB_SRC})
+add_library(pdfsigil_static STATIC ${LIB_SRC})
+add_library(pdfsigil SHARED ${LIB_SRC})
 
 #target_link_libraries(pdf-sigil_static ${OPENSSL_LIBRARIES} dl pthread)
 #target_link_libraries(pdf-sigil_shared ${OPENSSL_LIBRARIES} dl pthread)
-target_link_libraries(pdf-sigil_static crypto)
-target_link_libraries(pdf-sigil_shared crypto)
+target_link_libraries(pdfsigil_static crypto)
+target_link_libraries(pdfsigil crypto)
 
 # build selftest executable
 add_executable(selftest ${TEST_SRC})
-target_link_libraries(selftest pdf-sigil_static)
+target_link_libraries(selftest pdfsigil)
 
 # running selftest
 add_custom_target(run_tests ALL
