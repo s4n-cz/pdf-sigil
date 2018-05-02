@@ -11,11 +11,11 @@ sigil_err_t process_trailer(sigil_t *sgl)
     if (sgl == NULL)
         return ERR_PARAMETER;
 
-    err = parse_word(sgl, "trailer");
+    err = skip_word(sgl, "trailer");
     if (err != ERR_NONE)
         return err;
 
-    err = parse_word(sgl, "<<");
+    err = skip_word(sgl, "<<");
     if (err != ERR_NONE)
         return err;
 

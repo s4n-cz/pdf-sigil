@@ -23,7 +23,7 @@ static sigil_err_t parse_subfilter(sigil_t *sgl)
 
     sigil_zeroize(tmp, SUBFILTER_MAX * sizeof(*tmp));
 
-    err = parse_word(sgl, "/");
+    err = skip_word(sgl, "/");
     if (err != ERR_NONE)
         return err;
 
@@ -64,14 +64,14 @@ static sigil_err_t parse_byte_range(sigil_t *sgl)
     if (sgl == NULL)
         return ERR_PARAMETER;
 
-    err = parse_word(sgl, "[");
+    err = skip_word(sgl, "[");
     if (err != ERR_NONE)
         return err;
 
     byte_range = &(sgl->byte_range);
 
     while (1) {
-        if (parse_word(sgl, "]") == ERR_NONE)
+        if (skip_word(sgl, "]") == ERR_NONE)
             return ERR_NONE;
 
         err = parse_number(sgl, &start);
@@ -117,7 +117,7 @@ sigil_err_t process_sig_dict(sigil_t *sgl)
             return err;
     }
 
-    err = parse_word(sgl, "<<");
+    err = skip_word(sgl, "<<");
     if (err != ERR_NONE)
         return err;
 

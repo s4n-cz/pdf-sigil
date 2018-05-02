@@ -24,7 +24,7 @@ sigil_err_t parse_contents(sigil_t *sgl)
     if (sgl->contents != NULL)
         contents_free(sgl);
 
-    if ((err = parse_word(sgl, "<")) != ERR_NONE)
+    if ((err = skip_word(sgl, "<")) != ERR_NONE)
         return err;
 
     sgl->contents = malloc(sizeof(*(sgl->contents)));

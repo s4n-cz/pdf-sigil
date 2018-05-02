@@ -23,7 +23,7 @@ sigil_err_t find_sig_field(sigil_t *sgl)
         if (err != ERR_NONE)
             return err;
 
-        err = parse_word(sgl, "<<");
+        err = skip_word(sgl, "<<");
         if (err != ERR_NONE)
             return err;
 
@@ -32,7 +32,7 @@ sigil_err_t find_sig_field(sigil_t *sgl)
         while (!other_ft && (err = parse_dict_key(sgl, &dict_key)) == ERR_NONE) {
             switch (dict_key) {
                 case DICT_KEY_FT:
-                    if (parse_word(sgl, "/Sig") == ERR_NONE) {
+                    if (skip_word(sgl, "/Sig") == ERR_NONE) {
                         sgl->ref_sig_field = *(sgl->fields.entry[i]);
                         return ERR_NONE;
                     } else {
@@ -70,14 +70,14 @@ sigil_err_t process_sig_field(sigil_t *sgl)
     if (err != ERR_NONE)
         return err;
 
-    err = parse_word(sgl, "<<");
+    err = skip_word(sgl, "<<");
     if (err != ERR_NONE)
         return err;
 
     while ((err = parse_dict_key(sgl, &dict_key)) == ERR_NONE) {
         switch (dict_key) {
             case DICT_KEY_FT:
-                if (parse_word(sgl, "/Sig") != ERR_NONE)
+                if (skip_word(sgl, "/Sig") != ERR_NONE)
                     return ERR_PDF_CONTENT;
                 break;
             case DICT_KEY_V:
@@ -91,7 +91,7 @@ sigil_err_t process_sig_field(sigil_t *sgl)
 
                     sgl->offset_sig_dict = offset;
 
-                    if ((err = parse_word(sgl, "<<")) != ERR_NONE)
+                    if ((err = skip_word(sgl, "<<")) != ERR_NONE)
                         return err;
 
                     err = skip_dictionary(sgl);

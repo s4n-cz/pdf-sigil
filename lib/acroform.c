@@ -23,7 +23,7 @@ sigil_err_t process_acroform(sigil_t *sgl)
             return err;
     }
 
-    err = parse_word(sgl, "<<");
+    err = skip_word(sgl, "<<");
     if (err != ERR_NONE)
         return err;
 

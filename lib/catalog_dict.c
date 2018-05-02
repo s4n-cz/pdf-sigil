@@ -24,7 +24,7 @@ sigil_err_t process_catalog_dictionary(sigil_t *sgl)
     if (err != ERR_NONE)
         return err;
 
-    err = parse_word(sgl, "<<");
+    err = skip_word(sgl, "<<");
     if (err != ERR_NONE)
         return err;
 
@@ -43,7 +43,7 @@ sigil_err_t process_catalog_dictionary(sigil_t *sgl)
 
                     sgl->offset_acroform = offset;
 
-                    if ((err = parse_word(sgl, "<<")) != ERR_NONE)
+                    if ((err = skip_word(sgl, "<<")) != ERR_NONE)
                         return err;
 
                     err = skip_dictionary(sgl);

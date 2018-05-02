@@ -134,8 +134,6 @@ sigil_err_t pdf_peek_char(sigil_t *sgl, char *result)
     return ERR_NO_DATA;
 }
 
-// shifts position relatively to current position in boundaries between
-//   beginning of file and end of file
 sigil_err_t pdf_move_pos_rel(sigil_t *sgl, ssize_t shift_bytes)
 {
     ssize_t final_position;
@@ -232,7 +230,7 @@ sigil_err_t pdf_goto_obj(sigil_t *sgl, reference_t *ref)
     if (tmp != ref->generation_num)
         return ERR_PDF_CONTENT;
 
-    err = parse_word(sgl, "obj");
+    err = skip_word(sgl, "obj");
     if (err != ERR_NONE)
         return err;
 
@@ -310,7 +308,6 @@ sigil_err_t skip_array(sigil_t *sgl)
     return err;
 }
 
-// without leading "<<"
 sigil_err_t skip_dictionary(sigil_t *sgl)
 {
     sigil_err_t err;
@@ -400,6 +397,37 @@ sigil_err_t skip_dict_unknown_value(sigil_t *sgl)
     return err;
 }
 
+sigil_err_t skip_word(sigil_t *sgl, const char *word)
+{
+    sigil_err_t err;
+    size_t length;
+    char c;
+
+    if (sgl == NULL || word == NULL)
+        return ERR_PARAMETER;
+
+    err = skip_leading_whitespaces(sgl);
+    if (err != ERR_NONE)
+        return err;
+
+    length = strlen(word);
+
+    for (size_t pos = 0; pos < length; pos++) {
+        err = pdf_peek_char(sgl, &c);
+        if (err != ERR_NONE)
+            return err;
+
+        if (c != word[pos])
+            return ERR_PDF_CONTENT;
+
+        err = pdf_move_pos_rel(sgl, 1);
+        if (err != ERR_NONE)
+            return err;
+    }
+
+    return ERR_NONE;
+}
+
 sigil_err_t parse_number(sigil_t *sgl, size_t *number)
 {
     sigil_err_t err;
@@ -436,37 +464,6 @@ sigil_err_t parse_number(sigil_t *sgl, size_t *number)
     return err;
 }
 
-sigil_err_t parse_word(sigil_t *sgl, const char *word)
-{
-    sigil_err_t err;
-    size_t length;
-    char c;
-
-    if (sgl == NULL || word == NULL)
-        return ERR_PARAMETER;
-
-    err = skip_leading_whitespaces(sgl);
-    if (err != ERR_NONE)
-        return err;
-
-    length = strlen(word);
-
-    for (size_t pos = 0; pos < length; pos++) {
-        err = pdf_peek_char(sgl, &c);
-        if (err != ERR_NONE)
-            return err;
-
-        if (c != word[pos])
-            return ERR_PDF_CONTENT;
-
-        err = pdf_move_pos_rel(sgl, 1);
-        if (err != ERR_NONE)
-            return err;
-    }
-
-    return ERR_NONE;
-}
-
 sigil_err_t parse_indirect_reference(sigil_t *sgl, reference_t *ref)
 {
     sigil_err_t err;
@@ -479,7 +476,7 @@ sigil_err_t parse_indirect_reference(sigil_t *sgl, reference_t *ref)
     if (err != ERR_NONE)
         return err;
 
-    err = parse_word(sgl, "R");
+    err = skip_word(sgl, "R");
     if (err != ERR_NONE)
         return err;
 
@@ -499,10 +496,10 @@ sigil_err_t parse_dict_key(sigil_t *sgl, dict_key_t *dict_key)
 
     sigil_zeroize(tmp, DICT_KEY_MAX * sizeof(*tmp));
 
-    if (parse_word(sgl, ">>") == ERR_NONE)
+    if (skip_word(sgl, ">>") == ERR_NONE)
         return ERR_END_OF_DICT;
 
-    err = parse_word(sgl, "/");
+    err = skip_word(sgl, "/");
     if (err != ERR_NONE)
         return err;
 
@@ -554,6 +551,8 @@ sigil_err_t parse_dict_key(sigil_t *sgl, dict_key_t *dict_key)
         *dict_key = DICT_KEY_UNKNOWN;
     }
 
+    sigil_zeroize(tmp, DICT_KEY_MAX * sizeof(*tmp));
+
     return ERR_NONE;
 }
 
@@ -567,10 +566,10 @@ sigil_err_t parse_ref_array(sigil_t *sgl, ref_array_t *ref_array)
     if (sgl == NULL || ref_array == NULL)
         return ERR_PARAMETER;
 
-    if ((err = parse_word(sgl, "[")) != ERR_NONE)
+    if ((err = skip_word(sgl, "[")) != ERR_NONE)
         return err;
 
-    if (parse_word(sgl, "]") == ERR_NONE) // empty array
+    if (skip_word(sgl, "]") == ERR_NONE) // empty array
         return ERR_NONE;
 
     if (ref_array->capacity <= 0) {
@@ -606,7 +605,7 @@ sigil_err_t parse_ref_array(sigil_t *sgl, ref_array_t *ref_array)
         ref_array->entry[position]->object_num = reference.object_num;
         ref_array->entry[position]->generation_num = reference.generation_num;
 
-        if (parse_word(sgl, "]") == ERR_NONE)
+        if (skip_word(sgl, "]") == ERR_NONE)
             return ERR_NONE;
 
         position++;
@@ -679,7 +678,7 @@ void print_test_result(int result, int verbosity)
     }
 }
 
-sigil_t *test_prepare_sgl_content(char *content, size_t size)
+sigil_t *test_prepare_sgl_buffer(char *content, size_t size)
 {
     sigil_t *sgl;
 
@@ -791,7 +790,7 @@ int sigil_auxiliary_self_test(int verbosity)
         size_t output_size;
 
         char *sstream = "abbbcx";
-        if ((sgl = test_prepare_sgl_content(sstream, strlen(sstream) + 1)) == NULL)
+        if ((sgl = test_prepare_sgl_buffer(sstream, strlen(sstream) + 1)) == NULL)
             goto failed;
 
         if (pdf_read(sgl, 5, output, &output_size) != ERR_NONE ||
@@ -812,7 +811,7 @@ int sigil_auxiliary_self_test(int verbosity)
     print_test_item("fn skip_leading_whitespaces", verbosity);
 
     {
-        if ((sgl = test_prepare_sgl_content("x", 2)) == NULL)
+        if ((sgl = test_prepare_sgl_buffer("x", 2)) == NULL)
             goto failed;
 
         if (skip_leading_whitespaces(sgl) != ERR_NONE)
@@ -823,7 +822,7 @@ int sigil_auxiliary_self_test(int verbosity)
 
         sigil_free(&sgl);
 
-        if ((sgl = test_prepare_sgl_content("\x00\x09\x0a\x0c\x0d\x20x", 8)) == NULL)
+        if ((sgl = test_prepare_sgl_buffer("\x00\x09\x0a\x0c\x0d\x20x", 8)) == NULL)
             goto failed;
 
         if (skip_leading_whitespaces(sgl) != ERR_NONE)
@@ -846,7 +845,7 @@ int sigil_auxiliary_self_test(int verbosity)
                         "/Third true "          \
                         "/Fourth [<86C><BA3>] " \
                         ">>x";
-        if ((sgl = test_prepare_sgl_content(sstream, strlen(sstream) + 1)) == NULL)
+        if ((sgl = test_prepare_sgl_buffer(sstream, strlen(sstream) + 1)) == NULL)
             goto failed;
 
         if (skip_dictionary(sgl) != ERR_NONE)
@@ -867,7 +866,7 @@ int sigil_auxiliary_self_test(int verbosity)
         char *sstream = "<</First /NameVal\n"    \
                         "/Second <</Nested -32 " \
                         ">> >>x";
-        if ((sgl = test_prepare_sgl_content(sstream, strlen(sstream) + 1)) == NULL)
+        if ((sgl = test_prepare_sgl_buffer(sstream, strlen(sstream) + 1)) == NULL)
             goto failed;
 
         if (skip_dict_unknown_value(sgl) != ERR_NONE)
@@ -888,7 +887,7 @@ int sigil_auxiliary_self_test(int verbosity)
         size_t result = 0;
 
         char *sstream = "0123456789    42";
-        if ((sgl = test_prepare_sgl_content(sstream, strlen(sstream) + 1)) == NULL)
+        if ((sgl = test_prepare_sgl_buffer(sstream, strlen(sstream) + 1)) == NULL)
             goto failed;
 
         if (parse_number(sgl, &result) != ERR_NONE || result != 123456789)

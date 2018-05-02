@@ -72,7 +72,7 @@ int sigil_header_self_test(int verbosity)
 
     {
         char *sstream_1 = "\x25PDF-1.1 x";
-        if ((sgl = test_prepare_sgl_content(sstream_1, strlen(sstream_1) + 1)) == NULL)
+        if ((sgl = test_prepare_sgl_buffer(sstream_1, strlen(sstream_1) + 1)) == NULL)
             goto failed;
 
         if (process_header(sgl) != ERR_NONE ||
@@ -95,7 +95,7 @@ int sigil_header_self_test(int verbosity)
                           "\xd3\x8c\x0f\xc0\x43\x1a\xa5\x07\x4f\xe2\x98\xb3\xd8"\
                           "\x53\x4b\x5d\x4b\xd6\x48\x26\x98\x09\xde\x0d"        \
                           "\x25PDF-1.2 x";
-        if ((sgl = test_prepare_sgl_content(sstream_2, strlen(sstream_2) + 1)) == NULL)
+        if ((sgl = test_prepare_sgl_buffer(sstream_2, strlen(sstream_2) + 1)) == NULL)
             goto failed;
 
         if (process_header(sgl) != ERR_NONE ||

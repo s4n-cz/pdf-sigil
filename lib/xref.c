@@ -165,7 +165,7 @@ sigil_err_t read_xref_table(sigil_t *sgl)
             return ERR_ALLOCATION;
     }
 
-    if ((err = parse_word(sgl, "xref")) != ERR_NONE)
+    if ((err = skip_word(sgl, "xref")) != ERR_NONE)
         return err;
 
     while (!xref_end) { // for all xref sections
@@ -192,9 +192,9 @@ sigil_err_t read_xref_table(sigil_t *sgl)
                 if (err != ERR_NONE)
                     return err;
 
-                if (parse_word(sgl, "f") == ERR_NONE)
+                if (skip_word(sgl, "f") == ERR_NONE)
                     continue;
-                err = parse_word(sgl, "n");
+                err = skip_word(sgl, "n");
                 if (err != ERR_NONE)
                     return err;
 
@@ -316,7 +316,7 @@ int sigil_xref_self_test(int verbosity)
                         "startxref\n" \
                         "1234567890\n"\
                         "\045\045EOF"; // %%EOF
-        if ((sgl = test_prepare_sgl_content(sstream, strlen(sstream) + 1)) == NULL)
+        if ((sgl = test_prepare_sgl_buffer(sstream, strlen(sstream) + 1)) == NULL)
             goto failed;
 
         if (read_startxref(sgl) != ERR_NONE ||

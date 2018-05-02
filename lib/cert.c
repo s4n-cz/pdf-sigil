@@ -23,7 +23,7 @@ sigil_err_t parse_one_cert(sigil_t *sgl, cert_t **result)
         *result = NULL;
     }
 
-    if ((err = parse_word(sgl, "<")) != ERR_NONE)
+    if ((err = skip_word(sgl, "<")) != ERR_NONE)
         return err;
 
     *result = malloc(sizeof(**result));
