@@ -15,33 +15,33 @@ sigil_err_t process_acroform(sigil_t *sgl)
 
     if (sgl->offset_acroform <= 0 && sgl->ref_acroform.object_num > 0) {
         err = pdf_goto_obj(sgl, &(sgl->ref_acroform));
-        if (err != ERR_NO)
+        if (err != ERR_NONE)
             return err;
     } else {
         err = pdf_move_pos_abs(sgl, sgl->offset_acroform);
-        if (err != ERR_NO)
+        if (err != ERR_NONE)
             return err;
     }
 
     err = parse_word(sgl, "<<");
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
-    while ((err = parse_dict_key(sgl, &dict_key)) == ERR_NO) {
+    while ((err = parse_dict_key(sgl, &dict_key)) == ERR_NONE) {
         switch (dict_key) {
             case DICT_KEY_Fields:
                 err = parse_ref_array(sgl, &(sgl->fields));
-                if (err != ERR_NO)
+                if (err != ERR_NONE)
                     return err;
                 break;
             case DICT_KEY_SigFlags:
                 err = parse_number(sgl, &(sgl->sig_flags));
-                if (err != ERR_NO)
+                if (err != ERR_NONE)
                     return err;
                 break;
             case DICT_KEY_UNKNOWN:
                 err = skip_dict_unknown_value(sgl);
-                if (err != ERR_NO)
+                if (err != ERR_NONE)
                     return err;
                 break;
             default:
@@ -50,7 +50,7 @@ sigil_err_t process_acroform(sigil_t *sgl)
     }
 
     if (err == ERR_END_OF_DICT)
-        return ERR_NO;
+        return ERR_NONE;
 
     return err;
 }

@@ -1,3 +1,7 @@
+/** @file
+ *
+ */
+
 #ifndef PDF_SIGIL_CONSTANTS_H
 #define PDF_SIGIL_CONSTANTS_H
 
@@ -45,7 +49,7 @@
 #define DEALLOCATE_FILE                 0x01
 #define DEALLOCATE_BUFFER               0x02
 
-#define ERR_NO                          0
+#define ERR_NONE                        0
 #define ERR_ALLOCATION                  1
 #define ERR_PARAMETER                   2
 #define ERR_IO                          3

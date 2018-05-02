@@ -48,7 +48,7 @@ sigil_err_t hex_to_dec(const char *in, size_t in_len, unsigned char *out, size_t
 
     out[*out_len] = '\0';
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 //void print_computed_hash(sigil_t *sgl)
@@ -121,7 +121,7 @@ sigil_err_t compute_digest_pkcs1(sigil_t *sgl)
 
     while (range != NULL) {
         err = pdf_move_pos_abs(sgl, range->start);
-        if (err != ERR_NO)
+        if (err != ERR_NONE)
             return err;
 
         bytes_left = range->length;
@@ -130,7 +130,7 @@ sigil_err_t compute_digest_pkcs1(sigil_t *sgl)
             current_length = MIN(HASH_UPDATE_SIZE, bytes_left);
 
             err = pdf_read(sgl, current_length, update_data, &read_size);
-            if (err != ERR_NO)
+            if (err != ERR_NONE)
                 return err;
             if (current_length != read_size)
                 return ERR_IO;
@@ -158,7 +158,7 @@ sigil_err_t compute_digest_pkcs1(sigil_t *sgl)
         goto end;
     }
 
-    err = ERR_NO;
+    err = ERR_NONE;
 
 end:
     if (update_data != NULL)
@@ -199,7 +199,7 @@ sigil_err_t load_certificates(sigil_t *sgl)
                       sizeof(*(certificate->cert_hex)) * ((cert_length + 1) / 2 + 1));
 
         err = hex_to_dec(certificate->cert_hex, cert_length, tmp_cert, &tmp_cert_len);
-        if (err != ERR_NO)
+        if (err != ERR_NONE)
             return err;
 
         const_tmp = tmp_cert;
@@ -215,7 +215,7 @@ sigil_err_t load_certificates(sigil_t *sgl)
         certificate = certificate->next;
     }
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 sigil_err_t load_digest(sigil_t *sgl)
@@ -252,7 +252,7 @@ sigil_err_t load_digest(sigil_t *sgl)
     sigil_zeroize(tmp_contents, sizeof(*contents) * ((contents_len + 1) / 2 + 1));
 
     err = hex_to_dec(contents, contents_len, tmp_contents, &tmp_contents_len);
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         goto end;
 
     const_tmp = tmp_contents;
@@ -310,7 +310,7 @@ sigil_err_t load_digest(sigil_t *sgl)
     sgl->digest_algorithm = X509_ALGOR_dup((X509_ALGOR *)tmp_alg);
     sgl->digest_original = ASN1_OCTET_STRING_dup(tmp_hash);
 
-    err = ERR_NO;
+    err = ERR_NONE;
 
 end:
     if (tmp_contents != NULL)
@@ -380,7 +380,7 @@ sigil_err_t verify_signing_certificate(sigil_t *sgl)
 
     X509_STORE_CTX_free(ctx);
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 sigil_err_t compare_digest(sigil_t *sgl)
@@ -396,7 +396,7 @@ sigil_err_t compare_digest(sigil_t *sgl)
     if (ASN1_STRING_cmp(sgl->digest_original, sgl->digest_computed) == 0)
         sgl->result_digest_comparison = HASH_CMP_RESULT_MATCH;
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 sigil_err_t verify_digest(sigil_t *sgl, int *result)
@@ -409,7 +409,7 @@ sigil_err_t verify_digest(sigil_t *sgl, int *result)
     *result = 1;
 
     err = compute_digest_pkcs1(sgl);
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
     return compare_digest(sgl);

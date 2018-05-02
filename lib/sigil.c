@@ -64,7 +64,7 @@ sigil_err_t sigil_init(sigil_t **sgl)
     (*sgl)->result_cert_verification        = CERT_STATUS_UNKNOWN;
     (*sgl)->result_digest_comparison        = HASH_CMP_RESULT_UNKNOWN;
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 sigil_err_t sigil_set_pdf_file(sigil_t *sgl, FILE *pdf_file)
@@ -99,7 +99,7 @@ sigil_err_t sigil_set_pdf_file(sigil_t *sgl, FILE *pdf_file)
         content = malloc(sizeof(char) * (sgl->pdf_data.size + 1));
         if (content == NULL) {
             // fallback to using the file
-            return ERR_NO;
+            return ERR_NONE;
         }
 
         total_processed = 0;
@@ -113,14 +113,14 @@ sigil_err_t sigil_set_pdf_file(sigil_t *sgl, FILE *pdf_file)
             {
                 // fallback to using the file
                 free(content);
-                return ERR_NO;
+                return ERR_NONE;
             }
         }
 
         if (total_processed * sizeof(char) != sgl->pdf_data.size) {
             // fallback to using the file
             free(content);
-            return ERR_NO;
+            return ERR_NONE;
         }
 
         content[total_processed] = '\0';
@@ -129,7 +129,7 @@ sigil_err_t sigil_set_pdf_file(sigil_t *sgl, FILE *pdf_file)
         sgl->pdf_data.deallocation_info |= DEALLOCATE_BUFFER;
     }
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 sigil_err_t sigil_set_pdf_path(sigil_t *sgl, const char *path_to_pdf)
@@ -186,7 +186,7 @@ sigil_err_t sigil_set_pdf_buffer(sigil_t *sgl, char *pdf_content, size_t size)
     sgl->pdf_data.buffer = pdf_content;
     sgl->pdf_data.size = size;
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 sigil_err_t sigil_set_trusted_system(sigil_t *sgl)
@@ -200,7 +200,7 @@ sigil_err_t sigil_set_trusted_system(sigil_t *sgl)
     if (X509_STORE_set_default_paths(sgl->trusted_store) != 1)
         return ERR_OPENSSL;
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 sigil_err_t sigil_set_trusted_file(sigil_t *sgl, const char *path_to_file)
@@ -214,7 +214,7 @@ sigil_err_t sigil_set_trusted_file(sigil_t *sgl, const char *path_to_file)
     if (X509_STORE_load_locations(sgl->trusted_store, path_to_file, NULL) != 1)
         return ERR_OPENSSL;
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 sigil_err_t sigil_set_trusted_dir(sigil_t *sgl, const char *path_to_dir)
@@ -228,7 +228,7 @@ sigil_err_t sigil_set_trusted_dir(sigil_t *sgl, const char *path_to_dir)
     if (X509_STORE_load_locations(sgl->trusted_store, NULL, path_to_dir) != 1)
         return ERR_OPENSSL;
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 static sigil_err_t sigil_verify_adbe_x509_rsa_sha1(sigil_t *sgl)
@@ -236,15 +236,15 @@ static sigil_err_t sigil_verify_adbe_x509_rsa_sha1(sigil_t *sgl)
     sigil_err_t err;
 
     err = load_certificates(sgl);
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
     err = verify_signing_certificate(sgl);
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
     err = load_digest(sgl);
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
     return verify_digest(sgl, &(sgl->result_digest_comparison));
@@ -260,12 +260,12 @@ sigil_err_t sigil_verify(sigil_t *sgl)
 
     // process header - %PDF-<pdf_x>.<pdf_y>
     err = process_header(sgl);
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
     // determine offset to the first cross-reference section
     err = read_startxref(sgl);
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
     if (sgl->xref != NULL)
@@ -281,55 +281,55 @@ sigil_err_t sigil_verify(sigil_t *sgl)
     while (sgl->xref->prev_section > 0 && (max_file_updates--) > 0) {
         // go to the position of the beginning of next cross-reference section
         err = pdf_move_pos_abs(sgl, sgl->xref->prev_section);
-        if (err != ERR_NO)
+        if (err != ERR_NONE)
             return err;
 
         sgl->xref->prev_section = 0;
 
         err = process_xref(sgl);
-        if (err != ERR_NO)
+        if (err != ERR_NONE)
             return err;
 
         err = process_trailer(sgl);
-        if (err != ERR_NO)
+        if (err != ERR_NONE)
             return err;
     }
 
     err = process_catalog_dictionary(sgl);
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
     err = process_acroform(sgl);
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
     if ((sgl->sig_flags & 0x01) == 0)
         return ERR_NO_SIGNATURE;
 
     err = find_sig_field(sgl);
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
     err = process_sig_field(sgl);
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
     err = process_sig_dict(sgl);
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
     switch (sgl->subfilter_type) {
         case SUBFILTER_adbe_x509_rsa_sha1:
             err = sigil_verify_adbe_x509_rsa_sha1(sgl);
-            if (err != ERR_NO)
+            if (err != ERR_NONE)
                 return err;
 
-            return ERR_NO;
+            return ERR_NONE;
         default:
             return ERR_NOT_IMPLEMENTED;
     }
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 sigil_err_t sigil_get_result(sigil_t *sgl, int *result)
@@ -346,17 +346,17 @@ sigil_err_t sigil_get_result(sigil_t *sgl, int *result)
     switch (sgl->subfilter_type) {
         case SUBFILTER_adbe_x509_rsa_sha1:
             err = sigil_get_cert_validation_result(sgl, &cert_res);
-            if (err != ERR_NO)
+            if (err != ERR_NONE)
                 return err;
 
             err = sigil_get_data_integrity_result(sgl, &digest_res);
-            if (err != ERR_NO)
+            if (err != ERR_NONE)
                 return err;
 
             *result = (cert_res == CERT_STATUS_VERIFIED) &&
                       (digest_res == HASH_CMP_RESULT_MATCH);
 
-            return ERR_NO;
+            return ERR_NONE;
         default:
             return ERR_NOT_IMPLEMENTED;
     }
@@ -369,7 +369,7 @@ sigil_err_t sigil_get_cert_validation_result(sigil_t *sgl, int *result)
 
     *result = sgl->result_cert_verification;
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 sigil_err_t sigil_get_data_integrity_result(sigil_t *sgl, int *result)
@@ -379,7 +379,7 @@ sigil_err_t sigil_get_data_integrity_result(sigil_t *sgl, int *result)
 
     *result = sgl->result_digest_comparison;
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 sigil_err_t sigil_get_original_digest(sigil_t *sgl, ASN1_OCTET_STRING **digest)
@@ -392,7 +392,7 @@ sigil_err_t sigil_get_original_digest(sigil_t *sgl, ASN1_OCTET_STRING **digest)
 
     *digest = ASN1_OCTET_STRING_dup(sgl->digest_original);
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 sigil_err_t sigil_get_computed_digest(sigil_t *sgl, ASN1_OCTET_STRING **digest)
@@ -405,7 +405,7 @@ sigil_err_t sigil_get_computed_digest(sigil_t *sgl, ASN1_OCTET_STRING **digest)
 
     *digest = ASN1_OCTET_STRING_dup(sgl->digest_computed);
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 sigil_err_t sigil_get_subfilter(sigil_t *sgl, int *subfilter)
@@ -415,7 +415,7 @@ sigil_err_t sigil_get_subfilter(sigil_t *sgl, int *subfilter)
 
     *subfilter = sgl->subfilter_type;
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 static void range_free(range_t *range)
@@ -513,7 +513,7 @@ void sigil_free(sigil_t **sgl)
 const char *sigil_err_string(sigil_err_t err)
 {
     switch (err) {
-        case ERR_NO:
+        case ERR_NONE:
             return "finished without any error";
         case ERR_ALLOCATION:
             return "ERROR during allocation";
@@ -553,7 +553,7 @@ int sigil_sigil_self_test(int verbosity)
     {
         sgl = NULL;
         err = sigil_init(&sgl);
-        if (err != ERR_NO || sgl == NULL)
+        if (err != ERR_NONE || sgl == NULL)
             goto failed;
 
         sigil_free(&sgl);
@@ -589,10 +589,10 @@ int sigil_sigil_self_test(int verbosity)
         if (sgl == NULL)
             goto failed;
 
-        if (sigil_set_trusted_system(sgl) != ERR_NO)
+        if (sigil_set_trusted_system(sgl) != ERR_NONE)
             goto failed;
 
-        if (sigil_verify(sgl) != ERR_NO)
+        if (sigil_verify(sgl) != ERR_NONE)
             goto failed;
 
         // TODO test verification result
@@ -611,7 +611,7 @@ int sigil_sigil_self_test(int verbosity)
         if (sgl == NULL)
             goto failed;
 
-        if (sigil_verify(sgl) != ERR_NO || 1)
+        if (sigil_verify(sgl) != ERR_NONE || 1)
             goto failed;
 
         // TODO test verification result

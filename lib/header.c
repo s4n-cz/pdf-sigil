@@ -20,11 +20,11 @@ sigil_err_t process_header(sigil_t *sgl)
 
     for (offset = 0; offset < HEADER_SEARCH_OFFSET; offset++) {
         err = pdf_move_pos_abs(sgl, offset);
-        if (err != ERR_NO)
+        if (err != ERR_NONE)
             return err;
 
         err = pdf_read(sgl, 5, tmp, &read_size);
-        if (err != ERR_NO)
+        if (err != ERR_NONE)
             return err;
         if (read_size != 5)
             return ERR_PDF_CONTENT;
@@ -32,15 +32,15 @@ sigil_err_t process_header(sigil_t *sgl)
         if (strncmp(tmp, "\x25PDF-", 5) != 0)
             continue;
 
-        if ((err = parse_number(sgl, &pdf_x)) != ERR_NO)
+        if ((err = parse_number(sgl, &pdf_x)) != ERR_NONE)
             return err;
 
-        if ((err = pdf_get_char(sgl, &c)) != ERR_NO)
+        if ((err = pdf_get_char(sgl, &c)) != ERR_NONE)
             return err;
         if (c != '.')
             return ERR_PDF_CONTENT;
 
-        if ((err = parse_number(sgl, &pdf_y)) != ERR_NO)
+        if ((err = parse_number(sgl, &pdf_y)) != ERR_NONE)
             return err;
 
         if ((pdf_x == 1 && pdf_y >= 0 && pdf_y <= 7) ||
@@ -54,7 +54,7 @@ sigil_err_t process_header(sigil_t *sgl)
 
         sgl->offset_pdf_start = offset;
 
-        return ERR_NO;
+        return ERR_NONE;
     }
 
     return ERR_PDF_CONTENT;
@@ -75,7 +75,7 @@ int sigil_header_self_test(int verbosity)
         if ((sgl = test_prepare_sgl_content(sstream_1, strlen(sstream_1) + 1)) == NULL)
             goto failed;
 
-        if (process_header(sgl) != ERR_NO ||
+        if (process_header(sgl) != ERR_NONE ||
             sgl->pdf_x != 1               ||
             sgl->pdf_y != 1               ||
             sgl->offset_pdf_start != 0)
@@ -83,9 +83,9 @@ int sigil_header_self_test(int verbosity)
             goto failed;
         }
 
-        if (skip_leading_whitespaces(sgl) != ERR_NO)
+        if (skip_leading_whitespaces(sgl) != ERR_NONE)
             goto failed;
-        if ((pdf_get_char(sgl, &c)) != ERR_NO || c != 'x')
+        if ((pdf_get_char(sgl, &c)) != ERR_NONE || c != 'x')
             goto failed;
 
         sigil_free(&sgl);
@@ -98,7 +98,7 @@ int sigil_header_self_test(int verbosity)
         if ((sgl = test_prepare_sgl_content(sstream_2, strlen(sstream_2) + 1)) == NULL)
             goto failed;
 
-        if (process_header(sgl) != ERR_NO ||
+        if (process_header(sgl) != ERR_NONE ||
             sgl->pdf_x != 1               ||
             sgl->pdf_y != 2               ||
             sgl->offset_pdf_start != 50)
@@ -106,9 +106,9 @@ int sigil_header_self_test(int verbosity)
             goto failed;
         }
 
-        if (skip_leading_whitespaces(sgl) != ERR_NO)
+        if (skip_leading_whitespaces(sgl) != ERR_NONE)
             goto failed;
-        if ((pdf_get_char(sgl, &c)) != ERR_NO || c != 'x')
+        if ((pdf_get_char(sgl, &c)) != ERR_NONE || c != 'x')
             goto failed;
 
         sigil_free(&sgl);

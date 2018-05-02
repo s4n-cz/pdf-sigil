@@ -1,3 +1,7 @@
+/** @file
+ *
+ */
+
 #ifndef PDF_SIGIL_CATALOG_DICT_H
 #define PDF_SIGIL_CATALOG_DICT_H
 

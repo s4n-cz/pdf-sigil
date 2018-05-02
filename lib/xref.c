@@ -16,7 +16,7 @@ static sigil_err_t determine_xref_type(sigil_t *sgl)
     if (sgl == NULL)
         return ERR_PARAMETER;
 
-    if ((err = pdf_peek_char(sgl, &c)) != ERR_NO)
+    if ((err = pdf_peek_char(sgl, &c)) != ERR_NONE)
         return err;
 
     if (c == 'x') {
@@ -27,7 +27,7 @@ static sigil_err_t determine_xref_type(sigil_t *sgl)
         return ERR_PDF_CONTENT;
     }
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 static sigil_err_t
@@ -55,7 +55,7 @@ add_xref_entry(xref_t *xref, size_t obj, size_t offset, size_t generation)
 
     while (*xref_entry != NULL) {
         if ((*xref_entry)->generation_num == generation)
-            return ERR_NO;
+            return ERR_NONE;
 
         xref_entry = &(*xref_entry)->next;
     }
@@ -68,7 +68,7 @@ add_xref_entry(xref_t *xref, size_t obj, size_t offset, size_t generation)
     (*xref_entry)->byte_offset = offset;
     (*xref_entry)->generation_num = generation;
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 static void free_xref_entry(xref_entry_t *entry)
@@ -125,22 +125,22 @@ sigil_err_t read_startxref(sigil_t *sgl)
         return ERR_PARAMETER;
 
     for (offset = 9; offset < XREF_SEARCH_OFFSET; offset++) {
-        if ((err = pdf_move_pos_abs(sgl, sgl->pdf_data.size - offset)) != ERR_NO)
+        if ((err = pdf_move_pos_abs(sgl, sgl->pdf_data.size - offset)) != ERR_NONE)
             return err;
         
         err = pdf_read(sgl, 9, tmp, &read_size);
-        if (err != ERR_NO)
+        if (err != ERR_NONE)
             return err;
         if (read_size != 9)
             return ERR_PDF_CONTENT;
 
         if (strncmp(tmp, "startxref", 9) == 0) {
-            if ((err = parse_number(sgl, &(sgl->offset_startxref))) != ERR_NO)
+            if ((err = parse_number(sgl, &(sgl->offset_startxref))) != ERR_NONE)
                 return err;
             if (sgl->offset_startxref == 0)
                 return ERR_PDF_CONTENT;
 
-            return ERR_NO;
+            return ERR_NONE;
         }
     }
 
@@ -165,7 +165,7 @@ sigil_err_t read_xref_table(sigil_t *sgl)
             return ERR_ALLOCATION;
     }
 
-    if ((err = parse_word(sgl, "xref")) != ERR_NO)
+    if ((err = parse_word(sgl, "xref")) != ERR_NONE)
         return err;
 
     while (!xref_end) { // for all xref sections
@@ -173,11 +173,11 @@ sigil_err_t read_xref_table(sigil_t *sgl)
             // read 2 numbers:
             //     - first object in subsection
             //     - number of entries in subsection
-            if (parse_number(sgl, &section_start) != ERR_NO) {
+            if (parse_number(sgl, &section_start) != ERR_NONE) {
                 xref_end = 1;
                 break;
             }
-            if (parse_number(sgl, &section_cnt) != ERR_NO)
+            if (parse_number(sgl, &section_cnt) != ERR_NONE)
                 return 1;
             if (section_start < 0 || section_cnt < 1)
                 return 1;
@@ -185,29 +185,29 @@ sigil_err_t read_xref_table(sigil_t *sgl)
             // for all entries in one section
             for (size_t section_offset = 0; section_offset < section_cnt; section_offset++) {
                 err = parse_number(sgl, &obj_offset);
-                if (err != ERR_NO)
+                if (err != ERR_NONE)
                     return err;
 
                 err = parse_number(sgl, &obj_generation);
-                if (err != ERR_NO)
+                if (err != ERR_NONE)
                     return err;
 
-                if (parse_word(sgl, "f") == ERR_NO)
+                if (parse_word(sgl, "f") == ERR_NONE)
                     continue;
                 err = parse_word(sgl, "n");
-                if (err != ERR_NO)
+                if (err != ERR_NONE)
                     return err;
 
                 size_t obj_num = section_start + section_offset;
 
                 err = add_xref_entry(sgl->xref, obj_num, obj_offset, obj_generation);
-                if (err != ERR_NO)
+                if (err != ERR_NONE)
                     return err;
             }
         }
     }
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 sigil_err_t process_xref(sigil_t *sgl)
@@ -218,7 +218,7 @@ sigil_err_t process_xref(sigil_t *sgl)
         return ERR_PARAMETER;
 
     err = determine_xref_type(sgl);
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
     switch (sgl->xref_type) {
@@ -231,7 +231,7 @@ sigil_err_t process_xref(sigil_t *sgl)
             return ERR_PDF_CONTENT;
     }
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 void print_xref(xref_t *xref)
@@ -269,10 +269,10 @@ int sigil_xref_self_test(int verbosity)
 
         sgl->xref_type = XREF_TYPE_UNSET;
 
-        if (pdf_move_pos_abs(sgl, 67954) != ERR_NO)
+        if (pdf_move_pos_abs(sgl, 67954) != ERR_NONE)
             goto failed;
 
-        if (determine_xref_type(sgl) != ERR_NO ||
+        if (determine_xref_type(sgl) != ERR_NONE ||
             sgl->xref_type != XREF_TYPE_TABLE)
         {
             goto failed;
@@ -294,10 +294,10 @@ int sigil_xref_self_test(int verbosity)
 
         sgl->xref_type = XREF_TYPE_UNSET;
 
-        if (pdf_move_pos_abs(sgl, 116) != ERR_NO)
+        if (pdf_move_pos_abs(sgl, 116) != ERR_NONE)
             goto failed;
 
-        if (determine_xref_type(sgl) != ERR_NO ||
+        if (determine_xref_type(sgl) != ERR_NONE ||
             sgl->xref_type != XREF_TYPE_STREAM)
         {
             goto failed;
@@ -319,7 +319,7 @@ int sigil_xref_self_test(int verbosity)
         if ((sgl = test_prepare_sgl_content(sstream, strlen(sstream) + 1)) == NULL)
             goto failed;
 
-        if (read_startxref(sgl) != ERR_NO ||
+        if (read_startxref(sgl) != ERR_NONE ||
             sgl->offset_startxref != 1234567890)
         {
             goto failed;

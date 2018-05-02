@@ -18,13 +18,13 @@ sigil_err_t parse_contents(sigil_t *sgl)
     if (sgl == NULL)
         return ERR_PARAMETER;
 
-    if ((err = skip_leading_whitespaces(sgl)) != ERR_NO)
+    if ((err = skip_leading_whitespaces(sgl)) != ERR_NONE)
         return err;
 
     if (sgl->contents != NULL)
         contents_free(sgl);
 
-    if ((err = parse_word(sgl, "<")) != ERR_NO)
+    if ((err = parse_word(sgl, "<")) != ERR_NONE)
         return err;
 
     sgl->contents = malloc(sizeof(*(sgl->contents)));
@@ -46,7 +46,7 @@ sigil_err_t parse_contents(sigil_t *sgl)
     position = 0;
 
     while (1) {
-        if ((err = pdf_get_char(sgl, &c)) != ERR_NO)
+        if ((err = pdf_get_char(sgl, &c)) != ERR_NONE)
             return err;
 
         // not enough space, allocate double
@@ -63,7 +63,7 @@ sigil_err_t parse_contents(sigil_t *sgl)
 
         if (c == '>') {
             (*data)[position] = '\0';
-            return ERR_NO;
+            return ERR_NONE;
         }
 
         (*data)[position] = c;

@@ -24,10 +24,10 @@ static sigil_err_t parse_subfilter(sigil_t *sgl)
     sigil_zeroize(tmp, SUBFILTER_MAX * sizeof(*tmp));
 
     err = parse_word(sgl, "/");
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
-    while ((err = pdf_peek_char(sgl, &c)) == ERR_NO) {
+    while ((err = pdf_peek_char(sgl, &c)) == ERR_NONE) {
         if (is_whitespace(c)) {
             if (count <= 0)
                 return ERR_PDF_CONTENT;
@@ -38,11 +38,11 @@ static sigil_err_t parse_subfilter(sigil_t *sgl)
             tmp[count++] = c;
         }
 
-        if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NO)
+        if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NONE)
             return err;
     }
 
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
     if (strncmp(tmp, "adbe.x509.rsa_sha1", 18) == 0) {
@@ -51,7 +51,7 @@ static sigil_err_t parse_subfilter(sigil_t *sgl)
         sgl->subfilter_type = SUBFILTER_UNKNOWN;
     }
 
-    return ERR_NO;
+    return ERR_NONE;
 }
 
 static sigil_err_t parse_byte_range(sigil_t *sgl)
@@ -65,21 +65,21 @@ static sigil_err_t parse_byte_range(sigil_t *sgl)
         return ERR_PARAMETER;
 
     err = parse_word(sgl, "[");
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
     byte_range = &(sgl->byte_range);
 
     while (1) {
-        if (parse_word(sgl, "]") == ERR_NO)
-            return ERR_NO;
+        if (parse_word(sgl, "]") == ERR_NONE)
+            return ERR_NONE;
 
         err = parse_number(sgl, &start);
-        if (err != ERR_NO)
+        if (err != ERR_NONE)
             return err;
 
         err = parse_number(sgl, &length);
-        if (err != ERR_NO)
+        if (err != ERR_NONE)
             return err;
 
         if (start + length > sgl->pdf_data.size)
@@ -109,45 +109,45 @@ sigil_err_t process_sig_dict(sigil_t *sgl)
 
     if (sgl->offset_sig_dict <= 0 && sgl->ref_sig_dict.object_num > 0) {
         err = pdf_goto_obj(sgl, &(sgl->ref_sig_dict));
-        if (err != ERR_NO)
+        if (err != ERR_NONE)
             return err;
     } else {
         err = pdf_move_pos_abs(sgl, sgl->offset_sig_dict);
-        if (err != ERR_NO)
+        if (err != ERR_NONE)
             return err;
     }
 
     err = parse_word(sgl, "<<");
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
-    while ((err = parse_dict_key(sgl, &dict_key)) == ERR_NO) {
+    while ((err = parse_dict_key(sgl, &dict_key)) == ERR_NONE) {
         switch (dict_key) {
             case DICT_KEY_SubFilter:
-                if ((err = parse_subfilter(sgl)) != ERR_NO)
+                if ((err = parse_subfilter(sgl)) != ERR_NONE)
                     return err;
 
                 break;
             case DICT_KEY_Cert:
                 err = parse_certs(sgl);
-                if (err != ERR_NO)
+                if (err != ERR_NONE)
                     return err;
 
                 break;
             case DICT_KEY_Contents:
                 err = parse_contents(sgl);
-                if (err != ERR_NO)
+                if (err != ERR_NONE)
                     return err;
 
                 break;
             case DICT_KEY_ByteRange:
-                if ((err = parse_byte_range(sgl)) != ERR_NO)
+                if ((err = parse_byte_range(sgl)) != ERR_NONE)
                     return err;
 
                 break;
             case DICT_KEY_UNKNOWN:
                 err = skip_dict_unknown_value(sgl);
-                if (err != ERR_NO)
+                if (err != ERR_NONE)
                     return err;
 
                 break;
@@ -157,7 +157,7 @@ sigil_err_t process_sig_dict(sigil_t *sgl)
     }
 
     if (err == ERR_END_OF_DICT)
-        return ERR_NO;
+        return ERR_NONE;
 
     return err;
 

@@ -12,14 +12,14 @@ sigil_err_t process_trailer(sigil_t *sgl)
         return ERR_PARAMETER;
 
     err = parse_word(sgl, "trailer");
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
     err = parse_word(sgl, "<<");
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
-    while ((err = parse_dict_key(sgl, &dict_key)) == ERR_NO) {
+    while ((err = parse_dict_key(sgl, &dict_key)) == ERR_NONE) {
         switch (dict_key) {
             case DICT_KEY_Size:
                 if (sgl->xref->size_from_trailer > 0) {
@@ -27,12 +27,12 @@ sigil_err_t process_trailer(sigil_t *sgl)
                 } else {
                     err = parse_number(sgl, &(sgl->xref->size_from_trailer));
                 }
-                if (err != ERR_NO)
+                if (err != ERR_NONE)
                     return err;
                 break;
             case DICT_KEY_Prev:
                 err = parse_number(sgl, &(sgl->xref->prev_section));
-                if (err != ERR_NO)
+                if (err != ERR_NONE)
                     return err;
                 break;
             case DICT_KEY_Root:
@@ -43,12 +43,12 @@ sigil_err_t process_trailer(sigil_t *sgl)
                 } else {
                     err = parse_indirect_reference(sgl, &(sgl->ref_catalog_dict));
                 }
-                if (err != ERR_NO)
+                if (err != ERR_NONE)
                     return err;
                 break;
             case DICT_KEY_UNKNOWN:
                 err = skip_dict_unknown_value(sgl);
-                if (err != ERR_NO)
+                if (err != ERR_NONE)
                     return err;
                 break;
             default:
@@ -57,7 +57,7 @@ sigil_err_t process_trailer(sigil_t *sgl)
     }
 
     if (err == ERR_END_OF_DICT)
-        return ERR_NO;
+        return ERR_NONE;
 
     return err;
 }
@@ -69,10 +69,7 @@ int sigil_trailer_self_test(int verbosity)
     // TEST: fn determine_xref_type - STREAM
     print_test_item("fn process_trailer", verbosity);
 
-    if (1)
-    {
-        goto failed;
-    }
+
 
     print_test_result(1, verbosity);
 

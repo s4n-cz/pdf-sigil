@@ -1,3 +1,7 @@
+/** @file
+ *
+ */
+
 #ifndef PDF_SIGIL_TYPES_H
 #define PDF_SIGIL_TYPES_H
 

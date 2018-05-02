@@ -1,6 +1,8 @@
 # Output
 build/
 Makefile.deps
+html
+latex
 
 # GENERAL
 

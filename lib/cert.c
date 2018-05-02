@@ -23,7 +23,7 @@ sigil_err_t parse_one_cert(sigil_t *sgl, cert_t **result)
         *result = NULL;
     }
 
-    if ((err = parse_word(sgl, "<")) != ERR_NO)
+    if ((err = parse_word(sgl, "<")) != ERR_NONE)
         return err;
 
     *result = malloc(sizeof(**result));
@@ -46,7 +46,7 @@ sigil_err_t parse_one_cert(sigil_t *sgl, cert_t **result)
     position = 0;
 
     while (1) {
-        if ((err = pdf_get_char(sgl, &c)) != ERR_NO)
+        if ((err = pdf_get_char(sgl, &c)) != ERR_NONE)
             return err;
 
         // not enough space, allocate double
@@ -63,7 +63,7 @@ sigil_err_t parse_one_cert(sigil_t *sgl, cert_t **result)
 
         if (c == '>') {
             (*data)[position] = '\0';
-            return ERR_NO;
+            return ERR_NONE;
         }
 
         (*data)[position] = c;
@@ -84,25 +84,25 @@ sigil_err_t parse_certs(sigil_t *sgl)
 
     additional_certs = 0;
 
-    if ((err = skip_leading_whitespaces(sgl)) != ERR_NO)
+    if ((err = skip_leading_whitespaces(sgl)) != ERR_NONE)
         return err;
 
-    if ((err = pdf_peek_char(sgl, &c)) != ERR_NO)
+    if ((err = pdf_peek_char(sgl, &c)) != ERR_NONE)
         return err;
 
     if (c == '[') // multiple certs
         additional_certs = 1;
 
-    if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NO)
+    if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NONE)
         return err;
 
     // read signing certificate
     err = parse_one_cert(sgl, &(sgl->certificates));
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
     if (!additional_certs)
-        return ERR_NO;
+        return ERR_NONE;
 
     next_cert = &(sgl->certificates);
 
@@ -110,21 +110,21 @@ sigil_err_t parse_certs(sigil_t *sgl)
     while (1) {
         next_cert = &((*next_cert)->next);
 
-        if ((err = skip_leading_whitespaces(sgl)) != ERR_NO)
+        if ((err = skip_leading_whitespaces(sgl)) != ERR_NONE)
             return err;
 
-        if ((err = pdf_peek_char(sgl, &c)) != ERR_NO)
+        if ((err = pdf_peek_char(sgl, &c)) != ERR_NONE)
             return err;
 
         if (c == ']') {
-            if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NO)
+            if ((err = pdf_move_pos_rel(sgl, 1)) != ERR_NONE)
                 return err;
 
-            return ERR_NO;
+            return ERR_NONE;
         }
 
         err = parse_one_cert(sgl, next_cert);
-        if (err != ERR_NO)
+        if (err != ERR_NONE)
             return err;
     }
 }

@@ -21,43 +21,43 @@ sigil_err_t process_catalog_dictionary(sigil_t *sgl)
     }
 
     err = pdf_goto_obj(sgl, &(sgl->ref_catalog_dict));
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
     err = parse_word(sgl, "<<");
-    if (err != ERR_NO)
+    if (err != ERR_NONE)
         return err;
 
-    while ((err = parse_dict_key(sgl, &dict_key)) == ERR_NO) {
+    while ((err = parse_dict_key(sgl, &dict_key)) == ERR_NONE) {
         switch (dict_key) {
             case DICT_KEY_AcroForm:
-                if ((err = skip_leading_whitespaces(sgl)) != ERR_NO)
+                if ((err = skip_leading_whitespaces(sgl)) != ERR_NONE)
                     return err;
 
-                if ((err = pdf_peek_char(sgl, &c)) != ERR_NO)
+                if ((err = pdf_peek_char(sgl, &c)) != ERR_NONE)
                     return err;
 
                 if (c == '<') {
-                    if ((err = get_curr_position(sgl, &offset)) != ERR_NO)
+                    if ((err = get_curr_position(sgl, &offset)) != ERR_NONE)
                         return err;
 
                     sgl->offset_acroform = offset;
 
-                    if ((err = parse_word(sgl, "<<")) != ERR_NO)
+                    if ((err = parse_word(sgl, "<<")) != ERR_NONE)
                         return err;
 
                     err = skip_dictionary(sgl);
-                    if (err != ERR_NO)
+                    if (err != ERR_NONE)
                         return err;
                 } else {
                     err = parse_indirect_reference(sgl, &(sgl->ref_acroform));
-                    if (err != ERR_NO)
+                    if (err != ERR_NONE)
                         return err;
                 }
                 break;
             case DICT_KEY_UNKNOWN:
                 err = skip_dict_unknown_value(sgl);
-                if (err != ERR_NO)
+                if (err != ERR_NONE)
                     return err;
                 break;
             default:
@@ -66,7 +66,7 @@ sigil_err_t process_catalog_dictionary(sigil_t *sgl)
     }
 
     if (err == ERR_END_OF_DICT)
-        return ERR_NO;
+        return ERR_NONE;
 
     return err;
 }
