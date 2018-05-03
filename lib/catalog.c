@@ -1,10 +1,10 @@
 #include "acroform.h"
 #include "auxiliary.h"
-#include "catalog_dict.h"
+#include "catalog.h"
 #include "constants.h"
 #include "types.h"
 
-sigil_err_t process_catalog_dictionary(sigil_t *sgl)
+sigil_err_t process_catalog(sigil_t *sgl)
 {
     sigil_err_t err;
     size_t offset;
@@ -69,4 +69,22 @@ sigil_err_t process_catalog_dictionary(sigil_t *sgl)
         return ERR_NONE;
 
     return err;
+}
+
+int sigil_catalog_self_test(int verbosity)
+{
+    print_module_name("catalog", verbosity);
+
+    // place for possible later tests
+    // ...
+
+    // all tests done
+    print_module_result(1, verbosity);
+    return 0;
+
+failed:
+    print_test_result(0, verbosity);
+    print_module_result(0, verbosity);
+
+    return 1;
 }

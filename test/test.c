@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <string.h>
+#include "acroform.h"
 #include "auxiliary.h"
+#include "catalog.h"
+#include "cert.h"
 #include "config.h"
 #include "header.h"
 #include "sigil.h"
@@ -54,6 +57,12 @@ int main(int argc, char **argv)
     if (sigil_trailer_self_test(verbosity) != 0)
         failed++;
     if (sigil_xref_self_test(verbosity) != 0)
+        failed++;
+    if (sigil_acroform_self_test(verbosity) != 0)
+        failed++;
+    if (sigil_catalog_self_test(verbosity) != 0)
+        failed++;
+    if (sigil_cert_self_test(verbosity) != 0)
         failed++;
     if (sigil_sigil_self_test(verbosity) != 0)
         failed++;

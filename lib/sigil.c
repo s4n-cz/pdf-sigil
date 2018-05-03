@@ -4,7 +4,7 @@
 #include <types.h>
 #include "acroform.h"
 #include "auxiliary.h"
-#include "catalog_dict.h"
+#include "catalog.h"
 #include "config.h"
 #include "constants.h"
 #include "cryptography.h"
@@ -295,7 +295,7 @@ sigil_err_t sigil_verify(sigil_t *sgl)
             return err;
     }
 
-    err = process_catalog_dictionary(sgl);
+    err = process_catalog(sgl);
     if (err != ERR_NONE)
         return err;
 

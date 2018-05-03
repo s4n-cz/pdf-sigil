@@ -128,3 +128,21 @@ sigil_err_t parse_certs(sigil_t *sgl)
             return err;
     }
 }
+
+int sigil_cert_self_test(int verbosity)
+{
+    print_module_name("cert", verbosity);
+
+    // place for possible later tests
+    // ...
+
+    // all tests done
+    print_module_result(1, verbosity);
+    return 0;
+
+failed:
+    print_test_result(0, verbosity);
+    print_module_result(0, verbosity);
+
+    return 1;
+}

@@ -54,3 +54,21 @@ sigil_err_t process_acroform(sigil_t *sgl)
 
     return err;
 }
+
+int sigil_acroform_self_test(int verbosity)
+{
+    print_module_name("acroform", verbosity);
+
+    // place for possible later tests
+    // ...
+
+    // all tests done
+    print_module_result(1, verbosity);
+    return 0;
+
+failed:
+    print_test_result(0, verbosity);
+    print_module_result(0, verbosity);
+
+    return 1;
+}
