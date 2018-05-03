@@ -160,7 +160,7 @@ sigil_err_t sigil_set_pdf_path(sigil_t *sgl, const char *path_to_pdf)
         {
             free(path_to_pdf_win);
             return ERR_IO;
-        }// MultiByteToWideChar TODO
+        }// MultiByteToWideChar may be used instead?
 
         if (_wfopen_s(&pdf_file, path_to_pdf_win, L"rb") != 0) {
             free(path_to_pdf_win);
