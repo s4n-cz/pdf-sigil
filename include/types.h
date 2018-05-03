@@ -16,20 +16,36 @@
     typedef SSIZE_T ssize_t;
 #endif
 
+/** @brief Error type with well-defined values used by most of the functions
+ *
+ */
 typedef uint32_t sigil_err_t;
 
+/** @brief Type used as an enumeration specifying dictionary key
+ *
+ */
 typedef uint32_t dict_key_t;
 
+/** @brief Type used as an indirect reference to object
+ *
+ */
 typedef struct {
     size_t object_num;
     size_t generation_num;
 } reference_t;
 
+/** @brief Type for storing the signature contents in hexadecimal
+ *
+ */
 typedef struct {
     char  *contents_hex;
     size_t capacity;
 } contents_t;
 
+/** @brief Type for storing a certificate in hexadecimal and X.509 form + pointer
+ *         to the next certificate (linked list)
+ *
+ */
 typedef struct cert_t {
     char     *cert_hex;
     X509     *x509;
@@ -37,6 +53,9 @@ typedef struct cert_t {
     struct cert_t *next;
 } cert_t;
 
+/** @brief Type for a range and pointer to the next one (linked list)
+ *
+ */
 typedef struct range_t {
     size_t start;
     size_t length;
@@ -48,12 +67,19 @@ typedef struct {
     size_t capacity;
 } ref_array_t;
 
+/** @brief Type for one entry from a cross-reference section and pointer to the
+ *         next one (linked list)
+ *
+ */
 typedef struct xref_entry_t {
     size_t byte_offset;
     size_t generation_num;
     struct xref_entry_t *next;
 } xref_entry_t;
 
+/** @brief Type for storing the entries from a cross-reference section
+ *
+ */
 typedef struct {
     xref_entry_t **entry;
     size_t         capacity;
@@ -61,6 +87,10 @@ typedef struct {
     size_t         prev_section;
 } xref_t;
 
+/** @brief Type for storing the PDF data. Allowing both - the file pointer
+ *         and the buffer
+ *
+ */
 typedef struct {
     FILE    *file;
     char    *buffer;
@@ -69,6 +99,10 @@ typedef struct {
     uint32_t deallocation_info;
 } pdf_data_t;
 
+/** @brief Sigil context for saving all the configuration, partial results during
+ *         verification process, and the final result
+ *
+ */
 typedef struct {
     // file data
     pdf_data_t         pdf_data;

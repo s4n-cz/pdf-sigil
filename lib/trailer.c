@@ -66,16 +66,11 @@ int sigil_trailer_self_test(int verbosity)
 {
     print_module_name("trailer", verbosity);
 
-    // TEST: fn determine_xref_type - STREAM
-    print_test_item("fn process_trailer", verbosity);
-
-
-
-    print_test_result(1, verbosity);
+    // place for possible later tests
+    // ...
 
     // all tests done
     print_module_result(1, verbosity);
-
     return 0;
 
 failed:
