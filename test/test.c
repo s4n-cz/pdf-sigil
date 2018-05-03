@@ -8,6 +8,8 @@
 #include "contents.h"
 #include "cryptography.h"
 #include "header.h"
+#include "sig_dict.h"
+#include "sig_field.h"
 #include "sigil.h"
 #include "trailer.h"
 #include "xref.h"
@@ -69,6 +71,10 @@ int main(int argc, char **argv)
     if (sigil_contents_self_test(verbosity) != 0)
         failed++;
     if (sigil_cryptography_self_test(verbosity) != 0)
+        failed++;
+    if (sigil_sig_dict_self_test(verbosity) != 0)
+        failed++;
+    if (sigil_sig_field_self_test(verbosity) != 0)
         failed++;
     if (sigil_sigil_self_test(verbosity) != 0)
         failed++;

@@ -126,30 +126,25 @@ sigil_err_t process_sig_dict(sigil_t *sgl)
             case DICT_KEY_SubFilter:
                 if ((err = parse_subfilter(sgl)) != ERR_NONE)
                     return err;
-
                 break;
             case DICT_KEY_Cert:
                 err = parse_certs(sgl);
                 if (err != ERR_NONE)
                     return err;
-
                 break;
             case DICT_KEY_Contents:
                 err = parse_contents(sgl);
                 if (err != ERR_NONE)
                     return err;
-
                 break;
             case DICT_KEY_ByteRange:
                 if ((err = parse_byte_range(sgl)) != ERR_NONE)
                     return err;
-
                 break;
             case DICT_KEY_UNKNOWN:
                 err = skip_dict_unknown_value(sgl);
                 if (err != ERR_NONE)
                     return err;
-
                 break;
             default:
                 return ERR_PDF_CONTENT;
@@ -160,5 +155,22 @@ sigil_err_t process_sig_dict(sigil_t *sgl)
         return ERR_NONE;
 
     return err;
+}
 
+int sigil_sig_dict_self_test(int verbosity)
+{
+    print_module_name("sig_dict", verbosity);
+
+    // place for possible later tests
+    // ...
+
+    // all tests done
+    print_module_result(1, verbosity);
+    return 0;
+
+failed:
+    print_test_result(0, verbosity);
+    print_module_result(0, verbosity);
+
+    return 1;
 }
