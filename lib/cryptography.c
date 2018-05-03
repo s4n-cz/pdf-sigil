@@ -399,18 +399,20 @@ sigil_err_t compare_digest(sigil_t *sgl)
     return ERR_NONE;
 }
 
-sigil_err_t verify_digest(sigil_t *sgl, int *result)
+int sigil_cryptography_self_test(int verbosity)
 {
-    sigil_err_t err;
+    print_module_name("cryptography", verbosity);
 
-    if (sgl == NULL || result == NULL)
-        return ERR_PARAMETER;
+    // place for possible later tests
+    // ...
 
-    *result = 1;
+    // all tests done
+    print_module_result(1, verbosity);
+    return 0;
 
-    err = compute_digest_pkcs1(sgl);
-    if (err != ERR_NONE)
-        return err;
+failed:
+    print_test_result(0, verbosity);
+    print_module_result(0, verbosity);
 
-    return compare_digest(sgl);
+    return 1;
 }

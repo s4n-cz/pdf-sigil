@@ -247,7 +247,11 @@ static sigil_err_t sigil_verify_adbe_x509_rsa_sha1(sigil_t *sgl)
     if (err != ERR_NONE)
         return err;
 
-    return verify_digest(sgl, &(sgl->result_digest_comparison));
+    err = compute_digest_pkcs1(sgl);
+    if (err != ERR_NONE)
+        return err;
+
+    return compare_digest(sgl);
 }
 
 sigil_err_t sigil_verify(sigil_t *sgl)

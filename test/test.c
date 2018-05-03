@@ -5,6 +5,8 @@
 #include "catalog.h"
 #include "cert.h"
 #include "config.h"
+#include "contents.h"
+#include "cryptography.h"
 #include "header.h"
 #include "sigil.h"
 #include "trailer.h"
@@ -63,6 +65,10 @@ int main(int argc, char **argv)
     if (sigil_catalog_self_test(verbosity) != 0)
         failed++;
     if (sigil_cert_self_test(verbosity) != 0)
+        failed++;
+    if (sigil_contents_self_test(verbosity) != 0)
+        failed++;
+    if (sigil_cryptography_self_test(verbosity) != 0)
         failed++;
     if (sigil_sigil_self_test(verbosity) != 0)
         failed++;
