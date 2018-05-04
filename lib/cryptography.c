@@ -10,7 +10,17 @@
 #include "types.h"
 
 
-sigil_err_t hex_to_dec(const char *in, size_t in_len, unsigned char *out, size_t *out_len)
+/** @brief Converts hexadecimal characters to the decimal value. Operates with
+ *         characters both on input and output, 2 chars on the input produces
+ *         1 char on the output
+ *
+ * @param in input - hexadecimal characters
+ * @param in_len length of the input
+ * @param out output buffer
+ * @param out_len length of the output written (without the terminating null)
+ * @return ERR_NONE if success
+ */
+static sigil_err_t hex_to_dec(const char *in, size_t in_len, unsigned char *out, size_t *out_len)
 {
     int first,
         second;
@@ -410,9 +420,11 @@ int sigil_cryptography_self_test(int verbosity)
     print_module_result(1, verbosity);
     return 0;
 
+/*
 failed:
     print_test_result(0, verbosity);
     print_module_result(0, verbosity);
 
     return 1;
+*/
 }

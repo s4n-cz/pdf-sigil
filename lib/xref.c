@@ -147,7 +147,12 @@ sigil_err_t read_startxref(sigil_t *sgl)
     return ERR_PDF_CONTENT;
 }
 
-sigil_err_t read_xref_table(sigil_t *sgl)
+/** @brief Reads all the entries from the cross-reference table to the context
+ *
+ * @param sgl context
+ * @return ERR_NONE if success
+ */
+static sigil_err_t read_xref_table(sigil_t *sgl)
 {
     size_t section_start = 0,
            section_cnt = 0,

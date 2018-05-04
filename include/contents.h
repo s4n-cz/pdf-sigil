@@ -14,6 +14,12 @@
  */
 sigil_err_t parse_contents(sigil_t *sgl);
 
+/** Cleans-up the contents entry from the context
+ *
+ * @param sgl context
+ */
+void contents_free(sigil_t *sgl);
+
 /** @brief Tests for the contents module
  *
  * @param verbosity output level - 0 means nothing, 1 prints module names with

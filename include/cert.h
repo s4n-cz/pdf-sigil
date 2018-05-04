@@ -15,6 +15,11 @@
  */
 sigil_err_t parse_certs(sigil_t *sgl);
 
+/** @brief Cleans-up the provided cert_t structure
+ *
+ */
+void cert_free(cert_t *cert);
+
 /** @brief Tests for the cert module
  *
  * @param verbosity output level - 0 means nothing, 1 prints module names with

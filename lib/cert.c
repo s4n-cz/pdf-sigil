@@ -8,7 +8,7 @@
 #include "sigil.h"
 
 
-sigil_err_t parse_one_cert(sigil_t *sgl, cert_t **result)
+static sigil_err_t parse_one_cert(sigil_t *sgl, cert_t **result)
 {
     sigil_err_t err;
     char c;
@@ -129,6 +129,22 @@ sigil_err_t parse_certs(sigil_t *sgl)
     }
 }
 
+void cert_free(cert_t *cert)
+{
+    if (cert == NULL)
+        return;
+
+    cert_free(cert->next);
+
+    if (cert->cert_hex != NULL)
+        free(cert->cert_hex);
+
+    if (cert->x509 != NULL)
+        X509_free(cert->x509);
+
+    free(cert);
+}
+
 int sigil_cert_self_test(int verbosity)
 {
     print_module_name("cert", verbosity);
@@ -140,9 +156,11 @@ int sigil_cert_self_test(int verbosity)
     print_module_result(1, verbosity);
     return 0;
 
+/*
 failed:
     print_test_result(0, verbosity);
     print_module_result(0, verbosity);
 
     return 1;
+*/
 }

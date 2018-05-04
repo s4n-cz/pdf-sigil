@@ -73,9 +73,11 @@ int sigil_trailer_self_test(int verbosity)
     print_module_result(1, verbosity);
     return 0;
 
+/*
 failed:
     print_test_result(0, verbosity);
     print_module_result(0, verbosity);
 
     return 1;
+*/
 }

@@ -129,17 +129,6 @@ sigil_err_t sigil_get_computed_digest(sigil_t *sgl, ASN1_OCTET_STRING **digest);
  */
 sigil_err_t sigil_get_subfilter(sigil_t *sgl, int *subfilter);
 
-/** @brief Cleans-up the provided cert_t structure
- *
- */
-void cert_free(cert_t *cert);
-
-/** Cleans-up the contents entry from the context
- *
- * @param sgl context
- */
-void contents_free(sigil_t *sgl);
-
 /** @brief Cleans-up the provided sigil context
  *
  * @param sgl context

@@ -4,14 +4,8 @@ project(pdf_sigil)
 set(CMAKE_C_STANDARD 11)
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic")
 
-# add OpenSSL
-#set (OPENSSL_USE_STATIC_LIBS TRUE)
-#include(FindOpenSSL)
-#find_package(OpenSSL REQUIRED)
-
 # header files
 include_directories(include)
-#include_directories(${OPENSSL_INCLUDE_DIR})
 
 file(GLOB LIB_SRC "lib/*.c")
 set (TEST_SRC "test/test.c")
@@ -20,14 +14,23 @@ set (TEST_SRC "test/test.c")
 add_library(pdfsigil_static STATIC ${LIB_SRC})
 add_library(pdfsigil SHARED ${LIB_SRC})
 
-#target_link_libraries(pdf-sigil_static ${OPENSSL_LIBRARIES} dl pthread)
-#target_link_libraries(pdf-sigil_shared ${OPENSSL_LIBRARIES} dl pthread)
 target_link_libraries(pdfsigil_static crypto)
 target_link_libraries(pdfsigil crypto)
 
 # build selftest executable
 add_executable(selftest ${TEST_SRC})
 target_link_libraries(selftest pdfsigil)
+
+# find Doxygen package for generating the documentation
+find_package(Doxygen)
+if (DOXYGEN_FOUND)
+    add_custom_target(doc ALL
+        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Generating Doxygen documentation")
+else (DOXYGEN_FOUND)
+    message("Install Doxygen for generation of the documentation")
+endif (DOXYGEN_FOUND)
 
 # running selftest
 add_custom_target(run_tests ALL

@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <types.h>
 #include "acroform.h"
 #include "auxiliary.h"
 #include "catalog.h"
+#include "cert.h"
 #include "config.h"
 #include "constants.h"
+#include "contents.h"
 #include "cryptography.h"
 #include "header.h"
 #include "sig_dict.h"
@@ -430,34 +431,6 @@ static void range_free(range_t *range)
     range_free(range->next);
 
     free(range);
-}
-
-void cert_free(cert_t *cert)
-{
-    if (cert == NULL)
-        return;
-
-    cert_free(cert->next);
-
-    if (cert->cert_hex != NULL)
-        free(cert->cert_hex);
-
-    if (cert->x509 != NULL)
-        X509_free(cert->x509);
-
-    free(cert);
-}
-
-void contents_free(sigil_t *sgl)
-{
-    if (sgl == NULL || sgl->contents == NULL)
-        return;
-
-    if (sgl->contents->contents_hex != NULL)
-        free(sgl->contents->contents_hex);
-
-    free(sgl->contents);
-    sgl->contents = NULL;
 }
 
 void sigil_free(sigil_t **sgl)

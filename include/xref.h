@@ -26,13 +26,6 @@ void xref_free(xref_t *xref);
  */
 sigil_err_t read_startxref(sigil_t *sgl);
 
-/** @brief Reads all the entries from the cross-reference table to the context
- *
- * @param sgl context
- * @return ERR_NONE if success
- */
-sigil_err_t read_xref_table(sigil_t *sgl);
-
 /** @brief Does processing of the cross-reference section - determines type and
  *         reads the entries
  *
