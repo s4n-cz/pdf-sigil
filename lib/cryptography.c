@@ -61,20 +61,6 @@ static sigil_err_t hex_to_dec(const char *in, size_t in_len, unsigned char *out,
     return ERR_NONE;
 }
 
-//void print_computed_hash(sigil_t *sgl)
-//{
-//    if (sgl == NULL || sgl->computed_hash_len <= 0)
-//        return;
-//
-//    printf("\nCOMPUTED HASH: ");
-//
-//    for (int i = 0; i < sgl->computed_hash_len; i++) {
-//        printf("%02x ", sgl->computed_hash[i]);
-//    }
-//
-//    printf("\n");
-//}
-
 sigil_err_t compute_digest_pkcs1(sigil_t *sgl)
 {
     sigil_err_t err;

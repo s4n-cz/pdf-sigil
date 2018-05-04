@@ -121,6 +121,12 @@ sigil_err_t sigil_get_original_digest(sigil_t *sgl, ASN1_OCTET_STRING **digest);
  */
 sigil_err_t sigil_get_computed_digest(sigil_t *sgl, ASN1_OCTET_STRING **digest);
 
+/** @brief Print provided message digest to the standard output
+ *
+ * @param digest input - digest to be printed
+ */
+void sigil_print_digest(const ASN1_OCTET_STRING *digest);
+
 /** @brief Gets the subfilter value from the provided context
  *
  * @param sgl context

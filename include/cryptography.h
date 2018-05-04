@@ -8,8 +8,6 @@
 #include "types.h"
 
 
-void print_computed_hash(sigil_t *sgl);
-
 /** @brief Compute a message digest (hash) for the PKCS#1 signature type
  *
  * @param sgl context

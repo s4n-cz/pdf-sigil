@@ -413,6 +413,25 @@ sigil_err_t sigil_get_computed_digest(sigil_t *sgl, ASN1_OCTET_STRING **digest)
     return ERR_NONE;
 }
 
+void sigil_print_digest(const ASN1_OCTET_STRING *digest)
+{
+    const unsigned char *digest_data;
+    int digest_len;
+
+    if (digest == NULL)
+        return;
+
+    digest_len = ASN1_STRING_length(digest);
+    digest_data = ASN1_STRING_get0_data(digest);
+
+    if (digest_len < 0 || digest_data == NULL)
+        return;
+
+    for (int i = 0; i < digest_len; i++) {
+        printf("%02x ", digest_data[i]);
+    }
+}
+
 sigil_err_t sigil_get_subfilter(sigil_t *sgl, int *subfilter)
 {
     if (sgl == NULL || subfilter == NULL)
