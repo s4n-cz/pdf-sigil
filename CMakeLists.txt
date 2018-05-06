@@ -21,16 +21,9 @@ target_link_libraries(pdfsigil crypto)
 add_executable(selftest ${TEST_SRC})
 target_link_libraries(selftest pdfsigil)
 
-# find Doxygen package for generating the documentation
-find_package(Doxygen)
-if (DOXYGEN_FOUND)
-    add_custom_target(doc ALL
-        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMENT "Generating Doxygen documentation")
-else (DOXYGEN_FOUND)
-    message("Install Doxygen for generation of the documentation")
-endif (DOXYGEN_FOUND)
+#build pdf-sigil - PoC command-line application
+add_executable(pdf-sigil src/pdf-sigil.c)
+target_link_libraries(pdf-sigil pdfsigil)
 
 # running selftest
 add_custom_target(run_tests ALL
@@ -46,3 +39,14 @@ add_custom_target(run_tests_quiet
     COMMAND selftest --quiet
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+# generating the documentation with a Doxygen
+find_package(Doxygen)
+if (DOXYGEN_FOUND)
+    add_custom_target(doc ALL
+            COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            COMMENT "Generating Doxygen documentation")
+else (DOXYGEN_FOUND)
+    message("Install Doxygen for generation of the documentation")
+endif (DOXYGEN_FOUND)

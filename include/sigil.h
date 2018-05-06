@@ -78,16 +78,17 @@ sigil_err_t sigil_set_trusted_dir(sigil_t *sgl, const char *path_to_dir);
  */
 sigil_err_t sigil_verify(sigil_t *sgl);
 
-/** @brief Gets the result from the provided context
+/** @brief Get the result from the provided context
  *
  * @param sgl context
- * @param result output - the result of digital signature verification
+ * @param result output - the result of digital signature verification,
+ *               VERIFY_SUCCESS or VERIFY_FAILED (constants.h)
  * @return ERR_NONE if success
  */
 sigil_err_t sigil_get_result(sigil_t *sgl, int *result);
 
-/** @brief Gets the result of a certificate validation phase from the provided
- *         context
+/** @brief Get the result of a certificate validation phase from the provided
+ *         context, CERT_STATUS_VERIFIED or CERT_STATUS_FAILED (constants.h)
  *
  * @param sgl context
  * @param result output - result of the certificate validation
@@ -95,8 +96,9 @@ sigil_err_t sigil_get_result(sigil_t *sgl, int *result);
  */
 sigil_err_t sigil_get_cert_validation_result(sigil_t *sgl, int *result);
 
-/** @brief Gets the result of a data integrity (message digest comparison) phase
- *         from the provided context
+/** @brief Get the result of a data integrity (message digest comparison) phase
+ *         from the provided context, HASH_CMP_RESULT_MATCH or
+ *         HASH_CMP_RESULT_DIFFER (constants.h)
  *
  * @param sgl context
  * @param result output - result of the message digest comparison
@@ -104,7 +106,7 @@ sigil_err_t sigil_get_cert_validation_result(sigil_t *sgl, int *result);
  */
 sigil_err_t sigil_get_data_integrity_result(sigil_t *sgl, int *result);
 
-/** @brief Gets the original message digest (from the signature) from the
+/** @brief Get the original message digest (from the signature) from the
  *         provided context
  *
  * @param sgl context
@@ -113,7 +115,7 @@ sigil_err_t sigil_get_data_integrity_result(sigil_t *sgl, int *result);
  */
 sigil_err_t sigil_get_original_digest(sigil_t *sgl, ASN1_OCTET_STRING **digest);
 
-/** @brief Gets the computed message digest from the provided context
+/** @brief Get the computed message digest from the provided context
  *
  * @param sgl context
  * @param digest output - the computed message digest
@@ -127,7 +129,7 @@ sigil_err_t sigil_get_computed_digest(sigil_t *sgl, ASN1_OCTET_STRING **digest);
  */
 void sigil_print_digest(const ASN1_OCTET_STRING *digest);
 
-/** @brief Gets the subfilter value from the provided context
+/** @brief Get the subfilter value from the provided context
  *
  * @param sgl context
  * @param subfilter output - the subfiter value

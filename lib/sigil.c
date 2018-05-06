@@ -358,8 +358,13 @@ sigil_err_t sigil_get_result(sigil_t *sgl, int *result)
             if (err != ERR_NONE)
                 return err;
 
-            *result = (cert_res == CERT_STATUS_VERIFIED) &&
-                      (digest_res == HASH_CMP_RESULT_MATCH);
+            if (cert_res == CERT_STATUS_VERIFIED &&
+                digest_res == HASH_CMP_RESULT_MATCH)
+            {
+                *result = VERIFY_SUCCESS;
+            } else {
+                *result = VERIFY_FAILED;
+            }
 
             return ERR_NONE;
         default:

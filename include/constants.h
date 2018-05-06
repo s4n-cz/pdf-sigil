@@ -46,6 +46,9 @@
 #define HASH_CMP_RESULT_MATCH           1
 #define HASH_CMP_RESULT_DIFFER          2
 
+#define VERIFY_SUCCESS                  0
+#define VERIFY_FAILED                   1
+
 #define DEALLOCATE_FILE                 0x01
 #define DEALLOCATE_BUFFER               0x02
 
