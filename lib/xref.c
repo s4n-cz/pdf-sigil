@@ -75,6 +75,7 @@ static void free_xref_entry(xref_entry_t *entry)
 {
     if (entry != NULL) {
         free_xref_entry(entry->next);
+        sigil_zeroize(entry, sizeof(*entry));
         free(entry);
     }
 }
@@ -111,6 +112,7 @@ void xref_free(xref_t *xref)
         free(xref->entry);
     }
 
+    sigil_zeroize(xref, sizeof(*xref));
     free(xref);
 }
 

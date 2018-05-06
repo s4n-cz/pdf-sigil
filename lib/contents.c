@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <types.h>
+#include <string.h>
 #include "auxiliary.h"
 #include "config.h"
 #include "constants.h"
@@ -41,7 +42,7 @@ sigil_err_t parse_contents(sigil_t *sgl)
 
     sigil_zeroize(*data, sizeof(**data) * CONTENTS_PREALLOCATION);
 
-    sgl->contents->capacity = CONTENTS_PREALLOCATION;
+    sgl->contents->size = CONTENTS_PREALLOCATION;
 
     position = 0;
 
@@ -50,15 +51,15 @@ sigil_err_t parse_contents(sigil_t *sgl)
             return err;
 
         // not enough space, allocate double
-        if (position >= sgl->contents->capacity) {
-            *data = realloc(*data, sizeof(**data) * sgl->contents->capacity * 2);
+        if (position >= sgl->contents->size) {
+            *data = realloc(*data, sizeof(**data) * sgl->contents->size * 2);
             if (*data == NULL)
                 return ERR_ALLOCATION;
 
-            sigil_zeroize(*data + sgl->contents->capacity,
-                          sizeof(**data) * sgl->contents->capacity);
+            sigil_zeroize(*data + sgl->contents->size,
+                          sizeof(**data) * sgl->contents->size);
 
-            sgl->contents->capacity *= 2;
+            sgl->contents->size *= 2;
         }
 
         if (c == '>') {
@@ -77,9 +78,13 @@ void contents_free(sigil_t *sgl)
     if (sgl == NULL || sgl->contents == NULL)
         return;
 
-    if (sgl->contents->contents_hex != NULL)
+    if (sgl->contents->contents_hex != NULL) {
+        sigil_zeroize(sgl->contents->contents_hex,
+                      sizeof(*sgl->contents->contents_hex) * sgl->contents->size);
         free(sgl->contents->contents_hex);
+    }
 
+    sigil_zeroize(sgl->contents, sizeof(*sgl->contents));
     free(sgl->contents);
     sgl->contents = NULL;
 }

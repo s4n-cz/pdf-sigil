@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <types.h>
+#include <string.h>
 #include "auxiliary.h"
 #include "cert.h"
 #include "config.h"
@@ -136,12 +137,16 @@ void cert_free(cert_t *cert)
 
     cert_free(cert->next);
 
-    if (cert->cert_hex != NULL)
+    if (cert->cert_hex != NULL) {
+        sigil_zeroize(cert->cert_hex,
+                      sizeof(*cert->cert_hex) * strlen(cert->cert_hex));
         free(cert->cert_hex);
+    }
 
     if (cert->x509 != NULL)
         X509_free(cert->x509);
 
+    sigil_zeroize(cert, sizeof(*cert));
     free(cert);
 }
 

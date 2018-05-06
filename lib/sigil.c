@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <types.h>
 #include "acroform.h"
 #include "auxiliary.h"
 #include "catalog.h"
@@ -27,7 +28,7 @@ sigil_err_t sigil_init(sigil_t **sgl)
     if (*sgl == NULL)
         return ERR_ALLOCATION;
 
-    sigil_zeroize(*sgl, sizeof(*sgl));
+    sigil_zeroize(*sgl, sizeof(**sgl));
 
     // set default values
     (*sgl)->pdf_data.file                   = NULL;
@@ -453,7 +454,7 @@ static void range_free(range_t *range)
         return;
 
     range_free(range->next);
-
+    sigil_zeroize(range, sizeof(*range));
     free(range);
 }
 
@@ -467,6 +468,7 @@ void sigil_free(sigil_t **sgl)
         (*sgl)->pdf_data.deallocation_info ^= DEALLOCATE_FILE;
     }
     if ((*sgl)->pdf_data.deallocation_info & DEALLOCATE_BUFFER) {
+        sigil_zeroize((*sgl)->pdf_data.buffer, (*sgl)->pdf_data.size);
         free((*sgl)->pdf_data.buffer);
         (*sgl)->pdf_data.deallocation_info ^= DEALLOCATE_BUFFER;
     }
@@ -474,16 +476,20 @@ void sigil_free(sigil_t **sgl)
     if ((*sgl)->xref != NULL)
         xref_free((*sgl)->xref);
 
-
     if ((*sgl)->fields.capacity > 0) {
         for (size_t i = 0; i < (*sgl)->fields.capacity; i++) {
             if ((*sgl)->fields.entry[i] != NULL) {
+                sigil_zeroize((*sgl)->fields.entry[i],
+                              sizeof(*(*sgl)->fields.entry[i]));
                 free((*sgl)->fields.entry[i]);
             }
         }
 
-        if ((*sgl)->fields.entry != NULL)
+        if ((*sgl)->fields.entry != NULL) {
+            sigil_zeroize((*sgl)->fields.entry,
+                          sizeof(*(*sgl)->fields.entry) * (*sgl)->fields.capacity);
             free((*sgl)->fields.entry);
+        }
     }
 
     if ((*sgl)->byte_range != NULL)
@@ -507,6 +513,7 @@ void sigil_free(sigil_t **sgl)
     if ((*sgl)->trusted_store != NULL)
         X509_STORE_free((*sgl)->trusted_store);
 
+    sigil_zeroize(*sgl, sizeof(**sgl));
     free(*sgl);
     *sgl = NULL;
 }

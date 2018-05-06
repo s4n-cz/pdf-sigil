@@ -39,7 +39,7 @@ typedef struct {
  */
 typedef struct {
     char  *contents_hex;
-    size_t capacity;
+    size_t size;
 } contents_t;
 
 /** @brief Type for storing a certificate in hexadecimal and X.509 form + pointer
