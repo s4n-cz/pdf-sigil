@@ -233,7 +233,7 @@ sigil_err_t process_xref(sigil_t *sgl)
             read_xref_table(sgl);
             break;
         case XREF_TYPE_STREAM:
-            return ERR_NOT_IMPLEMENTED; // TODO
+            return ERR_NOT_IMPLEMENTED;
         default:
             return ERR_PDF_CONTENT;
     }

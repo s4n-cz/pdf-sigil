@@ -129,6 +129,25 @@ sigil_err_t sigil_get_computed_digest(sigil_t *sgl, ASN1_OCTET_STRING **digest);
  */
 void sigil_print_digest(const ASN1_OCTET_STRING *digest);
 
+/** @brief Print original message digest from the signature to the standard
+ *         output
+ *
+ * @param sgl context
+ */
+void sigil_print_original_digest(sigil_t *sgl);
+
+/** @brief Print computed message digest to the standard output
+ *
+ * @param sgl context
+ */
+void sigil_print_computed_digest(sigil_t *sgl);
+
+/** @brief Print information about the signing certificate to the standard output
+ *
+ * @param sgl context
+ */
+void sigil_print_cert_info(sigil_t *sgl);
+
 /** @brief Get the subfilter value from the provided context
  *
  * @param sgl context

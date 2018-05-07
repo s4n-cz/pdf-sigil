@@ -438,6 +438,38 @@ void sigil_print_digest(const ASN1_OCTET_STRING *digest)
     }
 }
 
+void sigil_print_original_digest(sigil_t *sgl)
+{
+    ASN1_OCTET_STRING *digest;
+
+    if (sigil_get_original_digest(sgl, &digest) != ERR_NONE)
+        return;
+
+    sigil_print_digest(digest);
+}
+
+void sigil_print_computed_digest(sigil_t *sgl)
+{
+    ASN1_OCTET_STRING *digest;
+
+    if (sigil_get_computed_digest(sgl, &digest) != ERR_NONE)
+        return;
+
+    sigil_print_digest(digest);
+}
+
+void sigil_print_cert_info(sigil_t *sgl)
+{
+    BIO *out = BIO_new_fp(stdout,BIO_NOCLOSE);
+
+    if (sgl == NULL || sgl->certificates == NULL || sgl->certificates->x509 == NULL)
+        return;
+
+    X509_print_ex(out, sgl->certificates->x509, XN_FLAG_COMPAT, X509_FLAG_COMPAT);
+
+    BIO_free_all(out);
+}
+
 sigil_err_t sigil_get_subfilter(sigil_t *sgl, int *subfilter)
 {
     if (sgl == NULL || subfilter == NULL)
@@ -580,19 +612,17 @@ int sigil_sigil_self_test(int verbosity)
         if (sgl->pdf_data.size != 60457)
             goto failed;
 
-        // TODO test verification result
-
         sigil_free(&sgl);
     }
 
     print_test_result(1, verbosity);
 
-
-
     // TEST: fn sigil_verify with subfilter x509.rsa_sha1
     print_test_item("VERIFY x509.rsa_sha1", verbosity);
 
     {
+        int result;
+
         sgl = test_prepare_sgl_path("test/subtype_adbe.x509.rsa_sha1.pdf");
         if (sgl == NULL)
             goto failed;
@@ -603,26 +633,9 @@ int sigil_sigil_self_test(int verbosity)
         if (sigil_verify(sgl) != ERR_NONE)
             goto failed;
 
-        // TODO test verification result
-
-        sigil_free(&sgl);
-    }
-
-    print_test_result(1, verbosity);
-
-    // TEST: fn sigil_verify
-    print_test_item("fn sigil_verify", verbosity);
-
-    {
-        sgl = test_prepare_sgl_path(
-                "test/uznavany_bez_razitka_bez_revinfo_27_2_2012_CMS.pdf");
-        if (sgl == NULL)
+        err = sigil_get_result(sgl, &result);
+        if (err != ERR_NONE || result != VERIFY_SUCCESS)
             goto failed;
-
-        if (sigil_verify(sgl) != ERR_NONE || 1)
-            goto failed;
-
-        // TODO test verification result
 
         sigil_free(&sgl);
     }
