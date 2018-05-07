@@ -98,14 +98,25 @@ sigil_err_t compute_digest_pkcs1(sigil_t *sgl)
     }
 
     // only allowed algorithms
-    if (EVP_MD_type(evp_md) != NID_sha1   &&
-        EVP_MD_type(evp_md) != NID_sha256 &&
-        EVP_MD_type(evp_md) != NID_sha384 &&
-        EVP_MD_type(evp_md) != NID_sha512 &&
-        EVP_MD_type(evp_md) != NID_ripemd160)
-    {
-        err = ERR_DIGEST_TYPE;
-        goto end;
+    switch (EVP_MD_type(evp_md)) {
+        case NID_sha1:
+            sgl->hash_fn = HASH_FN_sha1;
+            break;
+        case NID_sha256:
+            sgl->hash_fn = HASH_FN_sha256;
+            break;
+        case NID_sha384:
+            sgl->hash_fn = HASH_FN_sha384;
+            break;
+        case NID_sha512:
+            sgl->hash_fn = HASH_FN_sha512;
+            break;
+        case NID_ripemd160:
+            sgl->hash_fn = HASH_FN_ripemd160;
+            break;
+        default:
+            err = ERR_DIGEST_TYPE;
+            goto end;
     }
 
     if (EVP_DigestInit_ex(ctx, evp_md, NULL) != 1) {

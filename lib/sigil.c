@@ -41,6 +41,7 @@ sigil_err_t sigil_init(sigil_t **sgl)
     (*sgl)->sig_flags                       = 0;
     (*sgl)->subfilter_type                  = SUBFILTER_UNKNOWN;
     (*sgl)->xref_type                       = XREF_TYPE_UNSET;
+    (*sgl)->hash_fn                         = HASH_FN_UNKNOWN;
     (*sgl)->ref_acroform.object_num         = 0;
     (*sgl)->ref_acroform.generation_num     = 0;
     (*sgl)->ref_catalog_dict.object_num     = 0;
@@ -393,6 +394,26 @@ sigil_err_t sigil_get_data_integrity_result(sigil_t *sgl, int *result)
     return ERR_NONE;
 }
 
+sigil_err_t sigil_get_subfilter(sigil_t *sgl, int *subfilter)
+{
+    if (sgl == NULL || subfilter == NULL)
+        return ERR_PARAMETER;
+
+    *subfilter = sgl->subfilter_type;
+
+    return ERR_NONE;
+}
+
+sigil_err_t sigil_get_hash_fn(sigil_t *sgl, int *hash_fn)
+{
+    if (sgl == NULL || hash_fn == NULL)
+        return ERR_PARAMETER;
+
+    *hash_fn = sgl->hash_fn;
+
+    return ERR_NONE;
+}
+
 sigil_err_t sigil_get_original_digest(sigil_t *sgl, ASN1_OCTET_STRING **digest)
 {
     if (sgl == NULL || digest == NULL)
@@ -458,6 +479,57 @@ void sigil_print_computed_digest(sigil_t *sgl)
     sigil_print_digest(digest);
 }
 
+void sigil_print_subfilter(sigil_t *sgl)
+{
+    int subfilter;
+
+    if (sgl == NULL)
+        return;
+
+    if (sigil_get_subfilter(sgl, &subfilter) != ERR_NONE)
+        return;
+
+    switch (subfilter) {
+        case SUBFILTER_adbe_x509_rsa_sha1:
+            printf("adbe.x509.rsa_sha1 (PKCS#1)");
+            break;
+        default:
+            printf("unknown");
+    }
+}
+
+void sigil_print_hash_fn(sigil_t *sgl)
+{
+    int hash_fn;
+
+    if (sgl == NULL)
+        return;
+
+    if (sigil_get_hash_fn(sgl, &hash_fn) != ERR_NONE)
+        return;
+
+    switch (hash_fn) {
+        case HASH_FN_sha1:
+            printf("SHA-1");
+            break;
+        case HASH_FN_sha256:
+            printf("SHA-256");
+            break;
+        case HASH_FN_sha384:
+            printf("SHA-384");
+            break;
+        case HASH_FN_sha512:
+            printf("SHA-512");
+            break;
+        case HASH_FN_ripemd160:
+            printf("RIPEMD160");
+            break;
+        default:
+            printf("unknown");
+            break;
+    }
+}
+
 void sigil_print_cert_info(sigil_t *sgl)
 {
     BIO *out = BIO_new_fp(stdout,BIO_NOCLOSE);
@@ -468,16 +540,6 @@ void sigil_print_cert_info(sigil_t *sgl)
     X509_print_ex(out, sgl->certificates->x509, XN_FLAG_COMPAT, X509_FLAG_COMPAT);
 
     BIO_free_all(out);
-}
-
-sigil_err_t sigil_get_subfilter(sigil_t *sgl, int *subfilter)
-{
-    if (sgl == NULL || subfilter == NULL)
-        return ERR_PARAMETER;
-
-    *subfilter = sgl->subfilter_type;
-
-    return ERR_NONE;
 }
 
 static void range_free(range_t *range)

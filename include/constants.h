@@ -38,6 +38,13 @@
 #define SUBFILTER_UNKNOWN               0
 #define SUBFILTER_adbe_x509_rsa_sha1    1
 
+#define HASH_FN_UNKNOWN                 0
+#define HASH_FN_sha1                    1
+#define HASH_FN_sha256                  2
+#define HASH_FN_sha384                  3
+#define HASH_FN_sha512                  4
+#define HASH_FN_ripemd160               5
+
 #define CERT_STATUS_UNKNOWN             0
 #define CERT_STATUS_VERIFIED            1
 #define CERT_STATUS_FAILED              2

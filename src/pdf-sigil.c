@@ -95,7 +95,8 @@ int main(int argc, char *argv[])
             cert_info = 1;
         } else {
             if (!quiet) {
-                fprintf(stderr, COLOR_RED"ERROR unknown parameter: "COLOR_RESET"%s\n", argv[pos]);
+                fprintf(stderr, COLOR_RED
+                        "ERROR unknown parameter: "COLOR_RESET"%s\n", argv[pos]);
                 print_banner();
             }
             goto end;
@@ -119,35 +120,45 @@ int main(int argc, char *argv[])
 
     // initialize sigil context
     if (sigil_init(&sgl) != ERR_NONE) {
-        if (!quiet)
-            fprintf(stderr, " ERROR initialize sigil context\n");
+        if (!quiet) {
+            fprintf(stderr, COLOR_RED
+                    " ERROR initialize sigil context\n"COLOR_RESET);
+        }
         goto end;
     }
 
     // set PDF file for the verification
     if (sigil_set_pdf_path(sgl, file) != ERR_NONE) {
-        if (!quiet)
-            fprintf(stderr, " ERROR with provided file\n");
+        if (!quiet) {
+            fprintf(stderr, COLOR_RED
+                    " ERROR with provided file\n"COLOR_RESET);
+        }
         goto end;
     }
 
     // set trusted CA certificates
     if (trusted_system) {
         if (sigil_set_trusted_system(sgl) != ERR_NONE) {
-            if (!quiet)
-                fprintf(stderr, " ERROR setting trusted certificates\n");
+            if (!quiet) {
+                fprintf(stderr, COLOR_RED
+                        " ERROR setting trusted certificates\n"COLOR_RESET);
+            }
             goto end;
         }
     } else if (trusted_file != NULL) {
         if (sigil_set_trusted_file(sgl, trusted_file) != ERR_NONE) {
-            if (!quiet)
-                fprintf(stderr, " ERROR setting trusted certificates\n");
+            if (!quiet) {
+                fprintf(stderr, COLOR_RED
+                        " ERROR setting trusted certificates\n"COLOR_RESET);
+            }
             goto end;
         }
     } else if (trusted_dir != NULL) {
         if (sigil_set_trusted_dir(sgl, trusted_dir) != ERR_NONE) {
-            if (!quiet)
-                fprintf(stderr, " ERROR setting trusted certificates\n");
+            if (!quiet) {
+                fprintf(stderr, COLOR_RED
+                        " ERROR setting trusted certificates\n"COLOR_RESET);
+            }
             goto end;
         }
     }
@@ -157,9 +168,11 @@ int main(int argc, char *argv[])
     if (err != ERR_NONE) {
         if (!quiet) {
             if (err == ERR_NOT_IMPLEMENTED) {
-                fprintf(stderr, " ERROR file uses feature that is not implemented\n");
+                fprintf(stderr, COLOR_RED
+                        " ERROR file uses feature that is not implemented\n"COLOR_RESET);
             } else {
-                fprintf(stderr, " ERROR obtaining verification result from the context\n");
+                fprintf(stderr, COLOR_RED
+                        " ERROR obtaining verification result from the context\n"COLOR_RESET);
             }
         }
         goto end;
@@ -169,19 +182,25 @@ int main(int argc, char *argv[])
     if (err != ERR_NONE) {
         if (!quiet) {
             if (err == ERR_NOT_IMPLEMENTED) {
-                fprintf(stderr, " ERROR file uses feature that is not implemented\n");
+                fprintf(stderr, COLOR_RED
+                        " ERROR file uses feature that is not implemented\n"COLOR_RESET);
             } else {
-                fprintf(stderr, " ERROR obtaining verification result from the context\n");
+                fprintf(stderr, COLOR_RED
+                        " ERROR obtaining verification result from the context\n"COLOR_RESET);
             }
         }
         goto end;
     }
 
-    if (sigil_get_data_integrity_result(sgl, &result_integrity) != ERR_NONE && !quiet)
-        fprintf(stderr, " ERROR failed to obtain data integrity result\n");
+    if (sigil_get_data_integrity_result(sgl, &result_integrity) != ERR_NONE && !quiet) {
+        fprintf(stderr, COLOR_RED
+                " ERROR failed to obtain data integrity result\n"COLOR_RESET);
+    }
 
-    if (sigil_get_cert_validation_result(sgl, &result_certificate) != ERR_NONE && !quiet)
-        fprintf(stderr, " ERROR failed to obtain certificate validation result\n");
+    if (sigil_get_cert_validation_result(sgl, &result_certificate) != ERR_NONE && !quiet) {
+        fprintf(stderr, COLOR_RED
+                " ERROR failed to obtain certificate validation result\n"COLOR_RESET);
+    }
 
     // print verification result
     if (result == VERIFY_SUCCESS) {
@@ -195,6 +214,12 @@ int main(int argc, char *argv[])
 
     // print verification details
     if (!quiet) {
+        printf("     %-20s", "subfilter:");
+        sigil_print_subfilter(sgl);
+        printf("\n");
+        printf("     %-20s", "hash function:");
+        sigil_print_hash_fn(sgl);
+        printf("\n\n");
         printf("     DATA INTEGRITY\n");
         printf("     --------------\n");
         printf("     %-20s", "original digest:");

@@ -112,6 +112,7 @@ typedef struct {
     size_t             sig_flags;
     int                subfilter_type;
     int                xref_type;
+    int                hash_fn;
     // indirect reference to pdf parts
     reference_t        ref_acroform;
     reference_t        ref_catalog_dict;

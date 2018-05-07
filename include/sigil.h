@@ -106,6 +106,22 @@ sigil_err_t sigil_get_cert_validation_result(sigil_t *sgl, int *result);
  */
 sigil_err_t sigil_get_data_integrity_result(sigil_t *sgl, int *result);
 
+/** @brief Get the subfilter value from the provided context
+ *
+ * @param sgl context
+ * @param subfilter output - the subfiter value
+ * @return ERR_NONE if success
+ */
+sigil_err_t sigil_get_subfilter(sigil_t *sgl, int *subfilter);
+
+/** @brief Get the hash function used for the integrity check
+ *
+ * @param sgl context
+ * @param hash_fn output - used message digest function
+ * @return ERR_NONE if success
+ */
+sigil_err_t sigil_get_hash_fn(sigil_t *sgl, int *hash_fn);
+
 /** @brief Get the original message digest (from the signature) from the
  *         provided context
  *
@@ -142,19 +158,23 @@ void sigil_print_original_digest(sigil_t *sgl);
  */
 void sigil_print_computed_digest(sigil_t *sgl);
 
+/** @brief Print digital signature subfilter value to the standard output
+ *
+ * @param sgl context
+ */
+void sigil_print_subfilter(sigil_t *sgl);
+
+/** @brief Print the hash function used to the standard output
+ *
+ * @param sgl context
+ */
+void sigil_print_hash_fn(sigil_t *sgl);
+
 /** @brief Print information about the signing certificate to the standard output
  *
  * @param sgl context
  */
 void sigil_print_cert_info(sigil_t *sgl);
-
-/** @brief Get the subfilter value from the provided context
- *
- * @param sgl context
- * @param subfilter output - the subfiter value
- * @return ERR_NONE if success
- */
-sigil_err_t sigil_get_subfilter(sigil_t *sgl, int *subfilter);
 
 /** @brief Cleans-up the provided sigil context
  *
