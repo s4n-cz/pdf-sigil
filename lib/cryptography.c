@@ -3,6 +3,7 @@
 #include <openssl/x509.h>
 #include <types.h>
 #include <string.h>
+#include <sigil.h>
 #include "auxiliary.h"
 #include "config.h"
 #include "constants.h"
@@ -426,20 +427,75 @@ sigil_err_t compare_digest(sigil_t *sgl)
 
 int sigil_cryptography_self_test(int verbosity)
 {
+    sigil_t *sgl;
+    sigil_err_t err;
+
     print_module_name("cryptography", verbosity);
 
-    // place for possible later tests
-    // ...
+    // TEST: fn compare_digest
+    print_test_item("fn compare_digest", verbosity);
+
+    {
+        const unsigned char *str_1 = (const unsigned char *)"123456789abcdef";
+        const unsigned char *str_2 = (const unsigned char *)"fedcba987654321";
+        int result;
+
+        err = sigil_init(&sgl);
+        if (err != ERR_NONE || sgl == NULL)
+            goto failed;
+
+        sgl->digest_original = ASN1_OCTET_STRING_new();
+        if (sgl->digest_original == NULL)
+            goto failed;
+
+        sgl->digest_computed = ASN1_OCTET_STRING_new();
+        if (sgl->digest_computed == NULL)
+            goto failed;
+
+        ASN1_OCTET_STRING_set(sgl->digest_original, str_1, -1);
+        ASN1_OCTET_STRING_set(sgl->digest_computed, str_1, -1);
+
+        if (compare_digest(sgl) != ERR_NONE)
+            goto failed;
+
+        if (sigil_get_data_integrity_result(sgl, &result) != ERR_NONE)
+            goto failed;
+
+        if (result != HASH_CMP_RESULT_MATCH)
+            goto failed;
+
+        ASN1_OCTET_STRING_free(sgl->digest_computed);
+
+        sgl->digest_computed = ASN1_OCTET_STRING_new();
+        if (sgl->digest_computed == NULL)
+            goto failed;
+
+        ASN1_OCTET_STRING_set(sgl->digest_computed, str_2, -1);
+
+        if (compare_digest(sgl) != ERR_NONE)
+            goto failed;
+
+        if (sigil_get_data_integrity_result(sgl, &result) != ERR_NONE)
+            goto failed;
+
+        if (result != HASH_CMP_RESULT_DIFFER)
+            goto failed;
+
+        sigil_free(&sgl);
+    }
+
+    print_test_result(1, verbosity);
 
     // all tests done
     print_module_result(1, verbosity);
     return 0;
 
-/*
 failed:
+    if (sgl != NULL)
+        sigil_free(&sgl);
+
     print_test_result(0, verbosity);
     print_module_result(0, verbosity);
 
     return 1;
-*/
 }
