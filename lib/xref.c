@@ -270,42 +270,17 @@ int sigil_xref_self_test(int verbosity)
 
     {
         sgl = test_prepare_sgl_path(
-            "test/uznavany_bez_razitka_bez_revinfo_27_2_2012_CMS.pdf");
+            "test/subtype_adbe.x509.rsa_sha1.pdf");
         if (sgl == NULL)
             goto failed;
 
         sgl->xref_type = XREF_TYPE_UNSET;
 
-        if (pdf_move_pos_abs(sgl, 67954) != ERR_NONE)
+        if (pdf_move_pos_abs(sgl, 58077) != ERR_NONE)
             goto failed;
 
         if (determine_xref_type(sgl) != ERR_NONE ||
             sgl->xref_type != XREF_TYPE_TABLE)
-        {
-            goto failed;
-        }
-
-        sigil_free(&sgl);
-    }
-
-    print_test_result(1, verbosity);
-
-    // TEST: fn determine_xref_type - STREAM
-    print_test_item("fn determine_xref_type STREAM", verbosity);
-
-    {
-        sgl = test_prepare_sgl_path(
-            "test/SampleSignedPDFDocument.pdf");
-        if (sgl == NULL)
-            goto failed;
-
-        sgl->xref_type = XREF_TYPE_UNSET;
-
-        if (pdf_move_pos_abs(sgl, 116) != ERR_NONE)
-            goto failed;
-
-        if (determine_xref_type(sgl) != ERR_NONE ||
-            sgl->xref_type != XREF_TYPE_STREAM)
         {
             goto failed;
         }

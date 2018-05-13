@@ -667,11 +667,11 @@ int sigil_sigil_self_test(int verbosity)
     print_test_item("file size", verbosity);
 
     {
-        sgl = test_prepare_sgl_path("test/EduLib__adbe.x509.rsa_sha1.pdf");
+        sgl = test_prepare_sgl_path("test/subtype_adbe.x509.rsa_sha1.pdf");
         if (sgl == NULL)
             goto failed;
 
-        if (sgl->pdf_data.size != 60457)
+        if (sgl->pdf_data.size != 58415)
             goto failed;
 
         sigil_free(&sgl);
