@@ -336,6 +336,25 @@ end:
     return err;
 }
 
+/* How to add support for CRL checking:
+ *
+ * X509_VERIFY_PARAM *param;
+ *
+ * param = X509_VERIFY_PARAM_new();
+ * if (param == NULL)
+ *     return ERR_OPENSSL;
+ *
+ * // set verify flags -> X509_V_FLAG_CRL_CHECK or X509_V_FLAG_CRL_CHECK_ALL
+ * X509_VERIFY_PARAM_set_flags(param, X509_V_FLAG_CRL_CHECK_ALL);
+ *
+ * // after X509_STORE_CTX_init(...)
+ * X509_VERIFY_PARAM_set1(ctx->param, param);
+ *
+ * // before call to X509_verify_cert(...) add the CRLs
+ *
+ * // at the end
+ * X509_VERIFY_PARAM_free(param);
+*/
 sigil_err_t verify_signing_certificate(sigil_t *sgl)
 {
     X509_STORE_CTX *ctx;
@@ -369,7 +388,6 @@ sigil_err_t verify_signing_certificate(sigil_t *sgl)
         sk_X509_free(trusted_chain);
         return ERR_OPENSSL;
     }
-
 
     // signing certificate to be verified
     X509_STORE_CTX_set_cert(ctx, sgl->certificates->x509);
