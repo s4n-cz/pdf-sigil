@@ -679,8 +679,8 @@ int sigil_sigil_self_test(int verbosity)
 
     print_test_result(1, verbosity);
 
-    // TEST: fn sigil_verify with subfilter x509.rsa_sha1
-    print_test_item("VERIFY x509.rsa_sha1", verbosity);
+    // TEST: fn sigil_verify with subfilter x509.rsa_sha1 (correct)
+    print_test_item("VERIFY PKCS#1 (correct)", verbosity);
 
     {
         int result;
@@ -697,6 +697,39 @@ int sigil_sigil_self_test(int verbosity)
 
         err = sigil_get_result(sgl, &result);
         if (err != ERR_NONE || result != VERIFY_SUCCESS)
+            goto failed;
+
+        sigil_free(&sgl);
+    }
+
+    print_test_result(1, verbosity);
+
+    // TEST: fn sigil_verify with subfilter x509.rsa_sha1 (incorrect)
+    print_test_item("VERIFY PKCS#1 (incorrect)", verbosity);
+
+    {
+        int result;
+
+        sgl = test_prepare_sgl_path("test/modified_pkcs1.pdf");
+        if (sgl == NULL)
+            goto failed;
+
+        if (sigil_set_trusted_system(sgl) != ERR_NONE)
+            goto failed;
+
+        if (sigil_verify(sgl) != ERR_NONE)
+            goto failed;
+
+        err = sigil_get_result(sgl, &result);
+        if (err != ERR_NONE || result != VERIFY_FAILED)
+            goto failed;
+
+        err = sigil_get_cert_validation_result(sgl, &result);
+        if (err != ERR_NONE || result != CERT_STATUS_VERIFIED)
+            goto failed;
+
+        err = sigil_get_data_integrity_result(sgl, &result);
+        if (err != ERR_NONE || result != HASH_CMP_RESULT_DIFFER)
             goto failed;
 
         sigil_free(&sgl);

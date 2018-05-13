@@ -7,7 +7,7 @@ Word **sigil** in name stands for latin word *sigillum*, which means **seal** or
 
 ### Build
 
-Performs build with output into "build" directory. After those steps, there will be a **static and shared library** and also **selftest executable**.
+Performs build and puts the output into *build* directory. After these steps, there will be a **libpdfsigil** shared library with **selftest** executable and also **pdf-sigil** proof-of-concept executable. Also Doxygen documentation will be generated into *dir* directory.
 
 ```shell
 mkdir build
