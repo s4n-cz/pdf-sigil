@@ -169,10 +169,10 @@ int main(int argc, char *argv[])
         if (!quiet) {
             if (err == ERR_NOT_IMPLEMENTED) {
                 fprintf(stderr, COLOR_RED
-                        " ERROR file uses feature that is not implemented\n"COLOR_RESET);
+                        " ERROR Unable to verify file: Uses feature that is not implemented\n"COLOR_RESET);
             } else {
                 fprintf(stderr, COLOR_RED
-                        " ERROR obtaining verification result from the context\n"COLOR_RESET);
+                        " ERROR Unable to object verification result for file from the context\n"COLOR_RESET);
             }
         }
         goto end;
